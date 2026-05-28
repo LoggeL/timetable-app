@@ -129,8 +129,10 @@ export default function Home() {
       .sort((a, b) => (minutes(a.start) ?? 0) - (minutes(b.start) ?? 0) || a.stage.localeCompare(b.stage));
   }, [festivalActs, selectedDay, query]);
 
-  const stages = Array.from(new Set(visibleActs.map((act) => act.stage)));
   const timedActs = visibleActs.filter((act) => minutes(act.start) !== null && minutes(act.end) !== null);
+  const untimedActs = visibleActs.filter((act) => minutes(act.start) === null || minutes(act.end) === null);
+  const stages = Array.from(new Set((timedActs.length ? timedActs : visibleActs).map((act) => act.stage)));
+  const untimedStages = Array.from(new Set(untimedActs.map((act) => act.stage)));
   const firstActStart = timedActs.length ? Math.min(...timedActs.map((act) => minutes(act.start) ?? 0)) : 0;
   const lastActEnd = timedActs.length ? Math.max(...timedActs.map((act) => minutes(act.end) ?? 0)) : 0;
   const timelineStart = timedActs.length ? firstActStart - TIMELINE_MARGIN_MINUTES : 0;
@@ -225,92 +227,120 @@ export default function Home() {
         </div>
 
         {timedActs.length ? (
-          <div className="overflow-x-auto pb-4">
-            <div className="grid min-w-max gap-3" style={{ gridTemplateColumns: `72px repeat(${Math.max(stages.length, 1)}, minmax(245px, 1fr))` }}>
-              <div className="sticky left-0 z-20 rounded-[8px] border border-white/10 bg-zinc-950/95 px-3 py-2 text-xs font-black uppercase text-zinc-400">
-                Zeit
-              </div>
-              {stages.map((stage) => (
-                <div key={stage} className="sticky top-0 z-10 rounded-[8px] border border-white/10 bg-zinc-950/90 px-3 py-2 backdrop-blur">
-                  <h3 className="font-black">{stage}</h3>
+          <>
+            <div className="overflow-x-auto pb-4">
+              <div className="grid min-w-max gap-3" style={{ gridTemplateColumns: `72px repeat(${Math.max(stages.length, 1)}, minmax(245px, 1fr))` }}>
+                <div className="sticky left-0 z-20 rounded-[8px] border border-white/10 bg-zinc-950/95 px-3 py-2 text-xs font-black uppercase text-zinc-400">
+                  Zeit
                 </div>
-              ))}
-
-              <div className="relative sticky left-0 z-10 rounded-[8px] border border-white/10 bg-zinc-950/80" style={{ height: timelineHeight }}>
-                {hourTicks.map((tick) => (
-                  <div key={tick} className="absolute right-2 text-xs font-bold text-zinc-500" style={{ top: (tick - timelineStart) * PIXELS_PER_MINUTE - 8 }}>
-                    {formatTick(tick)}
+                {stages.map((stage) => (
+                  <div key={stage} className="sticky top-0 z-10 rounded-[8px] border border-white/10 bg-zinc-950/90 px-3 py-2 backdrop-blur">
+                    <h3 className="font-black">{stage}</h3>
                   </div>
                 ))}
-              </div>
 
-              {stages.map((stage) => (
-                <section key={stage} className="relative min-w-[245px] rounded-[8px] border border-white/10 bg-[rgba(15,23,27,0.82)]" style={{ height: timelineHeight }}>
+                <div className="relative sticky left-0 z-10 rounded-[8px] border border-white/10 bg-zinc-950/80" style={{ height: timelineHeight }}>
                   {hourTicks.map((tick) => (
-                    <div key={tick} className="pointer-events-none absolute left-0 right-0 border-t border-white/10" style={{ top: (tick - timelineStart) * PIXELS_PER_MINUTE }} />
+                    <div key={tick} className="absolute right-2 text-xs font-bold text-zinc-500" style={{ top: (tick - timelineStart) * PIXELS_PER_MINUTE - 8 }}>
+                      {formatTick(tick)}
+                    </div>
                   ))}
-                  {visibleActs.filter((act) => act.stage === stage).map((act) => {
-                    const start = minutes(act.start);
-                    const end = minutes(act.end);
-                    const people = votes[act.id] ?? [];
-                    const selected = people.includes(name.trim());
-                    if (start === null || end === null) return null;
+                </div>
 
-                    return (
-                      <button
-                        key={act.id}
-                        onClick={() => vote(act.id)}
-                        disabled={!name.trim() || busyAct === act.id}
-                        className={`absolute left-2 right-2 z-[1] flex flex-col items-start gap-1.5 overflow-hidden rounded-[8px] border px-2.5 py-2 text-left shadow-lg transition disabled:cursor-not-allowed disabled:opacity-60 ${selected ? "border-green-300 bg-green-300/20" : "border-white/10 bg-zinc-900/95 hover:border-orange-300/70 hover:bg-zinc-800/95"}`}
-                        style={{ top: (start - timelineStart) * PIXELS_PER_MINUTE, height: duration(act) }}
-                      >
-                        <span className="flex w-full items-center justify-between gap-2 text-[11px] font-bold uppercase text-zinc-400">
-                          <span className="inline-flex items-center gap-1"><Clock3 size={13} />{act.start} - {act.end}</span>
-                          {selected && <Check size={17} className="shrink-0 text-green-300" />}
-                        </span>
-                        <span className="line-clamp-2 text-sm font-black leading-tight md:text-base">{act.artist}</span>
-                        <span className="mt-auto flex min-h-5 max-w-full items-center gap-1 overflow-hidden text-[11px] text-zinc-300">
-                          <Users size={13} />
-                          <PersonTags people={people} compact />
-                        </span>
-                      </button>
-                    );
-                  })}
-                </section>
-              ))}
+                {stages.map((stage) => (
+                  <section key={stage} className="relative min-w-[245px] rounded-[8px] border border-white/10 bg-[rgba(15,23,27,0.82)]" style={{ height: timelineHeight }}>
+                    {hourTicks.map((tick) => (
+                      <div key={tick} className="pointer-events-none absolute left-0 right-0 border-t border-white/10" style={{ top: (tick - timelineStart) * PIXELS_PER_MINUTE }} />
+                    ))}
+                    {timedActs.filter((act) => act.stage === stage).map((act) => {
+                      const start = minutes(act.start);
+                      const end = minutes(act.end);
+                      const people = votes[act.id] ?? [];
+                      const selected = people.includes(name.trim());
+                      if (start === null || end === null) return null;
+
+                      return (
+                        <button
+                          key={act.id}
+                          onClick={() => vote(act.id)}
+                          disabled={!name.trim() || busyAct === act.id}
+                          className={`absolute left-2 right-2 z-[1] flex flex-col items-start gap-1.5 overflow-hidden rounded-[8px] border px-2.5 py-2 text-left shadow-lg transition disabled:cursor-not-allowed disabled:opacity-60 ${selected ? "border-green-300 bg-green-300/20" : "border-white/10 bg-zinc-900/95 hover:border-orange-300/70 hover:bg-zinc-800/95"}`}
+                          style={{ top: (start - timelineStart) * PIXELS_PER_MINUTE, height: duration(act) }}
+                        >
+                          <span className="flex w-full items-center justify-between gap-2 text-[11px] font-bold uppercase text-zinc-400">
+                            <span className="inline-flex items-center gap-1"><Clock3 size={13} />{act.start} - {act.end}</span>
+                            {selected && <Check size={17} className="shrink-0 text-green-300" />}
+                          </span>
+                          <span className="line-clamp-2 text-sm font-black leading-tight md:text-base">{act.artist}</span>
+                          <span className="mt-auto flex min-h-5 max-w-full items-center gap-1 overflow-hidden text-[11px] text-zinc-300">
+                            <Users size={13} />
+                            <PersonTags people={people} compact />
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </section>
+                ))}
+              </div>
             </div>
-          </div>
+            {untimedActs.length > 0 && (
+              <div className="flex flex-col gap-3">
+                <h3 className="text-sm font-black uppercase tracking-[0.16em] text-zinc-400">Noch ohne Zeit</h3>
+                <ActGrid stages={untimedStages} visibleActs={untimedActs} votes={votes} name={name} busyAct={busyAct} vote={vote} />
+              </div>
+            )}
+          </>
         ) : (
-          <div className="grid gap-3 overflow-x-auto pb-4" style={{ gridTemplateColumns: `repeat(${Math.max(stages.length, 1)}, minmax(260px, 1fr))` }}>
-            {stages.map((stage) => (
-              <section key={stage} className="min-w-[260px] rounded-[8px] border border-white/10 bg-[rgba(15,23,27,0.82)] p-3">
-                <div className="sticky top-0 z-10 mb-3 rounded-[8px] border border-white/10 bg-zinc-950/90 px-3 py-2 backdrop-blur">
-                  <h3 className="font-black">{stage}</h3>
-                </div>
-                <div className="flex flex-col gap-3">
-                  {visibleActs.filter((act) => act.stage === stage).map((act) => {
-                    const people = votes[act.id] ?? [];
-                    const selected = people.includes(name.trim());
-                    return (
-                      <button key={act.id} onClick={() => vote(act.id)} disabled={!name.trim() || busyAct === act.id} className={`group flex w-full flex-col items-start gap-3 rounded-[8px] border p-3 text-left transition disabled:cursor-not-allowed disabled:opacity-60 ${selected ? "border-green-300 bg-green-300/15" : "border-white/10 bg-white/[0.06] hover:border-orange-300/70 hover:bg-white/[0.1]"}`} style={{ minHeight: duration(act) }}>
-                        <span className="flex w-full items-center justify-between gap-2 text-xs font-bold uppercase text-zinc-400">
-                          <span className="inline-flex items-center gap-1"><Clock3 size={14} />TBA</span>
-                          {selected && <Check size={18} className="text-green-300" />}
-                        </span>
-                        <span className="text-xl font-black leading-tight">{act.artist}</span>
-                        <span className="mt-auto flex flex-wrap items-center gap-2 text-xs text-zinc-300">
-                          <Users size={14} />
-                          <PersonTags people={people} />
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </section>
-            ))}
-          </div>
+          <ActGrid stages={stages} visibleActs={visibleActs} votes={votes} name={name} busyAct={busyAct} vote={vote} />
         )}
       </section>
     </main>
+  );
+}
+
+function ActGrid({
+  stages,
+  visibleActs,
+  votes,
+  name,
+  busyAct,
+  vote,
+}: {
+  stages: string[];
+  visibleActs: Act[];
+  votes: VoteState;
+  name: string;
+  busyAct: string | null;
+  vote: (actId: string) => void;
+}) {
+  return (
+    <div className="grid gap-3 overflow-x-auto pb-4" style={{ gridTemplateColumns: `repeat(${Math.max(stages.length, 1)}, minmax(260px, 1fr))` }}>
+      {stages.map((stage) => (
+        <section key={stage} className="min-w-[260px] rounded-[8px] border border-white/10 bg-[rgba(15,23,27,0.82)] p-3">
+          <div className="sticky top-0 z-10 mb-3 rounded-[8px] border border-white/10 bg-zinc-950/90 px-3 py-2 backdrop-blur">
+            <h3 className="font-black">{stage}</h3>
+          </div>
+          <div className="flex flex-col gap-3">
+            {visibleActs.filter((act) => act.stage === stage).map((act) => {
+              const people = votes[act.id] ?? [];
+              const selected = people.includes(name.trim());
+              return (
+                <button key={act.id} onClick={() => vote(act.id)} disabled={!name.trim() || busyAct === act.id} className={`group flex w-full flex-col items-start gap-3 rounded-[8px] border p-3 text-left transition disabled:cursor-not-allowed disabled:opacity-60 ${selected ? "border-green-300 bg-green-300/15" : "border-white/10 bg-white/[0.06] hover:border-orange-300/70 hover:bg-white/[0.1]"}`} style={{ minHeight: duration(act) }}>
+                  <span className="flex w-full items-center justify-between gap-2 text-xs font-bold uppercase text-zinc-400">
+                    <span className="inline-flex items-center gap-1"><Clock3 size={14} />TBA</span>
+                    {selected && <Check size={18} className="text-green-300" />}
+                  </span>
+                  <span className="text-xl font-black leading-tight">{act.artist}</span>
+                  <span className="mt-auto flex flex-wrap items-center gap-2 text-xs text-zinc-300">
+                    <Users size={14} />
+                    <PersonTags people={people} />
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </section>
+      ))}
+    </div>
   );
 }

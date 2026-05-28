@@ -35,8 +35,8 @@ export const festivals: Festival[] = [
     name: "Southside",
     place: "Neuhausen ob Eck",
     dates: "18.-21. Juni 2026",
-    note: "Offizielles Line-up nach Tagen; Uhrzeiten waren am 28.05.2026 noch nicht veroeffentlicht.",
-    sourceUrl: "https://southside.de/line-up/",
+    note: "Offizielles Line-up nach Tagen, vorlaeufige Zeiten aus Clashfinder; der offizielle Timetable war am 28.05.2026 noch nicht veroeffentlicht.",
+    sourceUrl: "https://clashfinder.com/m/southside18/",
   },
   {
     id: "stagetopia-2026",
@@ -63,6 +63,14 @@ function slugify(value: string) {
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-|-$/g, "");
+}
+
+function normalizeArtist(value: string) {
+  return slugify(value).replace(/^the-/, "");
+}
+
+function southsideTimeKey(date: string, artist: string) {
+  return `${date}|${normalizeArtist(artist)}`;
 }
 
 const rarRows: [string, string, string, string, string, string, string][] = [
@@ -138,6 +146,40 @@ const southsideByDay: Record<string, string[]> = {
   "Sonntag|21.06.2026": ["TWENTY ONE PILOTS", "FLORENCE + THE MACHINE", "PAPA ROACH", "FINCH", "NOTHING BUT THIEVES", "WOLF ALICE", "SSIO", "ALEXISONFIRE", "ALL TIME LOW", "KAFFKIEZ", "NATASHA BEDINGFIELD", "EDWIN ROSEN", "OG KEEMO", "ORVILLE PECK", "KASI", "DESTROY BOYS", "KINGFISHR", "DREI METER FELDWEG", "SCENE QUEEN", "FLORENCE ROAD", "THE SOPHS", "YONAKA", "PICTURE PARLOUR", "DAVID PUENTEZ", "TINLICKER"],
 };
 
+const southsideTimes: Record<string, { stage: string; start: string; end: string }> = {
+  [southsideTimeKey("19.06.2026", "Skindred")]: { stage: "Green Stage", start: "17:15", end: "18:15" },
+  [southsideTimeKey("19.06.2026", "A Day To Remember")]: { stage: "Green Stage", start: "18:55", end: "19:55" },
+  [southsideTimeKey("19.06.2026", "Billy Talent")]: { stage: "Green Stage", start: "22:40", end: "00:10" },
+  [southsideTimeKey("19.06.2026", "Leony")]: { stage: "Blue Stage", start: "18:15", end: "19:15" },
+  [southsideTimeKey("19.06.2026", "Empire Of The Sun")]: { stage: "Blue Stage", start: "21:45", end: "23:00" },
+  [southsideTimeKey("19.06.2026", "Provinz")]: { stage: "Blue Stage", start: "00:10", end: "02:00" },
+  [southsideTimeKey("19.06.2026", "PA69")]: { stage: "Red Stage", start: "19:00", end: "20:00" },
+  [southsideTimeKey("19.06.2026", "Filow")]: { stage: "Red Stage", start: "20:45", end: "21:45" },
+  [southsideTimeKey("19.06.2026", "BHZ")]: { stage: "Red Stage", start: "22:45", end: "00:00" },
+  [southsideTimeKey("20.06.2026", "Donots")]: { stage: "Green Stage", start: "18:30", end: "19:30" },
+  [southsideTimeKey("20.06.2026", "The Offspring")]: { stage: "Green Stage", start: "20:15", end: "21:45" },
+  [southsideTimeKey("20.06.2026", "Kraftklub")]: { stage: "Green Stage", start: "23:00", end: "00:30" },
+  [southsideTimeKey("20.06.2026", "The Beaches")]: { stage: "Blue Stage", start: "16:00", end: "16:45" },
+  [southsideTimeKey("20.06.2026", "Royel Otis")]: { stage: "Blue Stage", start: "17:45", end: "18:45" },
+  [southsideTimeKey("20.06.2026", "Bosse")]: { stage: "Blue Stage", start: "19:30", end: "20:30" },
+  [southsideTimeKey("20.06.2026", "Roy Bianco & Die Abbrunzati Boys")]: { stage: "Blue Stage", start: "21:35", end: "22:50" },
+  [southsideTimeKey("20.06.2026", "Yungblud")]: { stage: "Blue Stage", start: "00:30", end: "02:00" },
+  [southsideTimeKey("20.06.2026", "Pennywise")]: { stage: "Red Stage", start: "20:15", end: "21:30" },
+  [southsideTimeKey("20.06.2026", "Sondaschule")]: { stage: "Red Stage", start: "22:45", end: "00:00" },
+  [southsideTimeKey("21.06.2026", "All Time Low")]: { stage: "Green Stage", start: "14:45", end: "15:45" },
+  [southsideTimeKey("21.06.2026", "Alexisonfire")]: { stage: "Green Stage", start: "16:45", end: "17:45" },
+  [southsideTimeKey("21.06.2026", "Nothing But Thieves")]: { stage: "Green Stage", start: "18:30", end: "19:45" },
+  [southsideTimeKey("21.06.2026", "Papa Roach")]: { stage: "Green Stage", start: "20:30", end: "21:45" },
+  [southsideTimeKey("21.06.2026", "Twenty One Pilots")]: { stage: "Green Stage", start: "22:30", end: "00:00" },
+  [southsideTimeKey("21.06.2026", "Natasha Bedingfield")]: { stage: "Blue Stage", start: "14:00", end: "15:00" },
+  [southsideTimeKey("21.06.2026", "Wolf Alice")]: { stage: "Blue Stage", start: "15:45", end: "16:45" },
+  [southsideTimeKey("21.06.2026", "SSIO")]: { stage: "Blue Stage", start: "17:45", end: "18:45" },
+  [southsideTimeKey("21.06.2026", "Finch")]: { stage: "Blue Stage", start: "19:45", end: "21:00" },
+  [southsideTimeKey("21.06.2026", "Florence + The Machine")]: { stage: "Blue Stage", start: "21:45", end: "23:15" },
+  [southsideTimeKey("21.06.2026", "OG Keemo")]: { stage: "Red Stage", start: "18:30", end: "19:45" },
+  [southsideTimeKey("21.06.2026", "Edwin Rosen")]: { stage: "Red Stage", start: "20:30", end: "21:45" },
+};
+
 const southside: Act[] = Object.entries(southsideByDay).flatMap(([key, artists]) => {
   const [day, date] = key.split("|");
   return artists.map((artist, index) => ({
@@ -145,8 +187,10 @@ const southside: Act[] = Object.entries(southsideByDay).flatMap(([key, artists])
     festivalId: "southside-2026",
     day,
     date,
-    stage: artist.includes("NOIZE") || artist.includes("MODESELEKTOR") || artist.includes("PUENTEZ") || artist.includes("TINLICKER") || artist.includes("MODESTEP") || artist === "ROYA" ? "Electric Wave X White Stage" : "TBA",
+    stage: southsideTimes[southsideTimeKey(date, artist)]?.stage ?? (artist.includes("NOIZE") || artist.includes("MODESELEKTOR") || artist.includes("PUENTEZ") || artist.includes("TINLICKER") || artist.includes("MODESTEP") || artist === "ROYA" ? "Electric Wave X White Stage" : "TBA"),
     artist,
+    start: southsideTimes[southsideTimeKey(date, artist)]?.start,
+    end: southsideTimes[southsideTimeKey(date, artist)]?.end,
     source: "official-lineup",
   }));
 });
