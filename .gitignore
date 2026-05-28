@@ -1,0 +1,8 @@
+.next
+node_modules
+*.log
+*.pid
+/*.png
+!.gitkeep
+.cloudflared-quick
+data/votes.json

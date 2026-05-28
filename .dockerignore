@@ -1,0 +1,9 @@
+node_modules
+.next
+.cloudflared-quick
+/*.png
+timetable-next.log
+timetable-next.pid
+cloudflared-quick.yml
+.git
+data/votes.json
