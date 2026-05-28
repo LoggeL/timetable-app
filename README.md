@@ -14,12 +14,15 @@ Votes are stored in `data/votes.json`. There is intentionally no auth and no roo
 
 ## Production
 
-The production deployment is a Docker Swarm service:
+Production is deployed by Dokploy from GitHub:
 
-- Service: `timetable-app`
-- Image: `timetable-app:latest`
-- Network: `dokploy-network`
-- Traefik config: `/etc/dokploy/traefik/dynamic/timetable.yml`
+- Repository: `https://github.com/LoggeL/timetable-app`
+- Branch: `main`
+- Dokploy project: `timetable`
+- Dokploy service: `timetable`
+- Runtime Swarm service: `timetable-mloipe`
+- Build type: Dockerfile
+- Persistent vote volume: host bind mount `data/` -> `/app/data`
 - Public URL: `https://timetable.logge.top`
 
 ## Data
