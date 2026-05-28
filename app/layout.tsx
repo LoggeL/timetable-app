@@ -6,7 +6,8 @@ export const metadata: Metadata = {
   title: "Timetable",
   description: "Private Festival-Abstimmung fuer Gruppen: Timetables vergleichen, Acts auswaehlen und sehen, wer wohin will.",
   icons: {
-    icon: "/icon.svg",
+    icon: "/icon.png",
+    apple: "/apple-icon.png",
   },
   openGraph: {
     title: "Timetable",
