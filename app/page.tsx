@@ -21,6 +21,13 @@ function festivalStart(id: FestivalId) {
   return Math.min(...dates);
 }
 
+const festivalBackgrounds: Record<FestivalId, string> = {
+  "rock-am-ring-2026": "/images/rock-am-ring-bg.png",
+  "stagetopia-2026": "/images/stagetopia-bg.png",
+  "southside-2026": "/images/southside-bg.png",
+  "highfield-2026": "/images/highfield-bg.png",
+};
+
 function duration(act: Act) {
   const start = minutes(act.start);
   const end = minutes(act.end);
@@ -106,10 +113,7 @@ export default function Home() {
 
   const sortedFestivals = [...festivals].sort((a, b) => festivalStart(a.id) - festivalStart(b.id));
   const festival = sortedFestivals.find((item) => item.id === festivalId) ?? sortedFestivals[0];
-  const backgroundImage =
-    festival.id === "southside-2026"
-      ? "/images/southside-bg.png"
-      : "/images/rock-am-ring-bg.png";
+  const backgroundImage = festivalBackgrounds[festival.id];
   const festivalActs = acts.filter((act) => act.festivalId === festivalId);
   const days = Array.from(new Set(festivalActs.map((act) => `${act.day}|${act.date}`))).sort(
     (a, b) => dateValue(a.split("|")[1]) - dateValue(b.split("|")[1]),
