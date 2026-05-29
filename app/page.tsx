@@ -1,7 +1,7 @@
 "use client";
 
 import { CalendarDays, Check, Clock3, MapPin, Search, Users } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { acts, festivals, type Act, type FestivalId } from "@/lib/festivals";
 import type { VoteState } from "@/lib/votes";
 
@@ -14,6 +14,21 @@ function minutes(time?: string) {
 function dateValue(date: string) {
   const [day, month, year] = date.split(".").map(Number);
   return new Date(year, month - 1, day).getTime();
+}
+
+function dateKey(date: Date) {
+  return `${String(date.getDate()).padStart(2, "0")}.${String(date.getMonth() + 1).padStart(2, "0")}.${date.getFullYear()}`;
+}
+
+function festivalDateKey(date: Date) {
+  const adjusted = new Date(date);
+  if (adjusted.getHours() < 8) adjusted.setDate(adjusted.getDate() - 1);
+  return dateKey(adjusted);
+}
+
+function currentFestivalMinutes(date: Date) {
+  const hour = date.getHours();
+  return (hour < 8 ? hour + 24 : hour) * 60 + date.getMinutes();
 }
 
 function festivalStart(id: FestivalId) {
@@ -87,6 +102,10 @@ export default function Home() {
   const [query, setQuery] = useState("");
   const [votes, setVotes] = useState<VoteState>({});
   const [busyAct, setBusyAct] = useState<string | null>(null);
+  const [now, setNow] = useState<Date | null>(null);
+  const nowLineRef = useRef<HTMLDivElement | null>(null);
+  const autoSelectedCurrentDayRef = useRef(false);
+  const autoScrolledRef = useRef("");
 
   useEffect(() => {
     fetch("/api/votes")
@@ -110,6 +129,12 @@ export default function Home() {
       window.localStorage.removeItem(NAME_STORAGE_KEY);
     }
   }, [name, nameLoaded]);
+
+  useEffect(() => {
+    setNow(new Date());
+    const timer = window.setInterval(() => setNow(new Date()), 30_000);
+    return () => window.clearInterval(timer);
+  }, []);
 
   const sortedFestivals = [...festivals].sort((a, b) => festivalStart(a.id) - festivalStart(b.id));
   const festival = sortedFestivals.find((item) => item.id === festivalId) ?? sortedFestivals[0];
@@ -143,6 +168,50 @@ export default function Home() {
     { length: timedActs.length ? Math.floor((timelineEnd - firstHourTick) / HOUR) + 1 : 0 },
     (_, index) => firstHourTick + index * HOUR,
   );
+  const currentDayDate = now ? festivalDateKey(now) : "";
+  const currentMinutes = now ? currentFestivalMinutes(now) : null;
+  const isCurrentSelectedDay = dayDate === currentDayDate;
+  const nowTop =
+    isCurrentSelectedDay && currentMinutes !== null && currentMinutes >= timelineStart && currentMinutes <= timelineEnd
+      ? (currentMinutes - timelineStart) * PIXELS_PER_MINUTE
+      : null;
+  const currentActIds =
+    isCurrentSelectedDay && currentMinutes !== null
+      ? new Set(
+          timedActs
+            .filter((act) => {
+              const start = minutes(act.start);
+              const end = minutes(act.end);
+              return start !== null && end !== null && currentMinutes >= start && currentMinutes < end;
+            })
+            .map((act) => act.id),
+        )
+      : new Set<string>();
+
+  useEffect(() => {
+    if (!now || autoSelectedCurrentDayRef.current) return;
+    const currentDate = festivalDateKey(now);
+    const currentFestival = sortedFestivals.find((item) => acts.some((act) => act.festivalId === item.id && act.date === currentDate));
+    const currentDay = currentFestival
+      ? Array.from(new Set(acts.filter((act) => act.festivalId === currentFestival.id && act.date === currentDate).map((act) => `${act.day}|${act.date}`))).sort(
+          (a, b) => dateValue(a.split("|")[1]) - dateValue(b.split("|")[1]),
+        )[0]
+      : "";
+    autoSelectedCurrentDayRef.current = true;
+    if (!currentFestival || !currentDay) return;
+    setFestivalId(currentFestival.id);
+    setDay(currentDay);
+  }, [now, sortedFestivals]);
+
+  useEffect(() => {
+    if (nowTop === null || !nowLineRef.current || !selectedDay) return;
+    const scrollKey = `${festivalId}|${selectedDay}`;
+    if (autoScrolledRef.current === scrollKey) return;
+    autoScrolledRef.current = scrollKey;
+    window.setTimeout(() => {
+      nowLineRef.current?.scrollIntoView({ block: "center", inline: "nearest", behavior: "smooth" });
+    }, 80);
+  }, [festivalId, nowTop, selectedDay]);
 
   async function vote(actId: string) {
     if (!name.trim()) return;
@@ -245,6 +314,13 @@ export default function Home() {
                       {formatTick(tick)}
                     </div>
                   ))}
+                  {nowTop !== null && (
+                    <div ref={nowLineRef} className="pointer-events-none absolute left-0 right-0 z-20" style={{ top: nowTop }}>
+                      <span className="absolute right-2 -translate-y-1/2 rounded-full bg-red-500 px-2 py-0.5 text-[11px] font-black text-white shadow-lg shadow-red-950/40">
+                        Jetzt
+                      </span>
+                    </div>
+                  )}
                 </div>
 
                 {stages.map((stage) => (
@@ -252,6 +328,11 @@ export default function Home() {
                     {hourTicks.map((tick) => (
                       <div key={tick} className="pointer-events-none absolute left-0 right-0 border-t border-white/10" style={{ top: (tick - timelineStart) * PIXELS_PER_MINUTE }} />
                     ))}
+                    {nowTop !== null && (
+                      <div className="pointer-events-none absolute left-0 right-0 z-20 border-t-2 border-red-500 shadow-[0_0_14px_rgba(239,68,68,0.75)]" style={{ top: nowTop }}>
+                        <span className="absolute left-2 top-0 h-2 w-2 -translate-y-1/2 rounded-full bg-red-400 shadow-[0_0_12px_rgba(248,113,113,0.9)]" />
+                      </div>
+                    )}
                     {timedActs.filter((act) => act.stage === stage).map((act) => {
                       const start = minutes(act.start);
                       const end = minutes(act.end);
@@ -264,7 +345,7 @@ export default function Home() {
                           key={act.id}
                           onClick={() => vote(act.id)}
                           disabled={!name.trim() || busyAct === act.id}
-                          className={`absolute left-2 right-2 z-[1] flex flex-col items-start gap-1.5 overflow-hidden rounded-[8px] border px-2.5 py-2 text-left shadow-lg transition disabled:cursor-not-allowed disabled:opacity-60 ${selected ? "border-green-300 bg-green-300/20" : "border-white/10 bg-zinc-900/95 hover:border-orange-300/70 hover:bg-zinc-800/95"}`}
+                          className={`absolute left-2 right-2 z-[1] flex flex-col items-start gap-1.5 overflow-hidden rounded-[8px] border px-2.5 py-2 text-left shadow-lg transition disabled:cursor-not-allowed disabled:opacity-60 ${currentActIds.has(act.id) ? "ring-2 ring-red-400/80" : ""} ${selected ? "border-green-300 bg-green-300/20" : "border-white/10 bg-zinc-900/95 hover:border-orange-300/70 hover:bg-zinc-800/95"}`}
                           style={{ top: (start - timelineStart) * PIXELS_PER_MINUTE, height: duration(act) }}
                         >
                           <span className="flex w-full items-center justify-between gap-2 text-[11px] font-bold uppercase text-zinc-400">
