@@ -19,6 +19,7 @@ export type Festival = {
   dates: string;
   note: string;
   sourceUrl: string;
+  stageOrder: string[];
 };
 
 export const festivals: Festival[] = [
@@ -29,6 +30,7 @@ export const festivals: Festival[] = [
     dates: "5.-7. Juni 2026",
     note: "Offizielle Zeiten von rock-am-ring.com, Stand 28.05.2026.",
     sourceUrl: "https://www.rock-am-ring.com/timetable",
+    stageOrder: ["Utopia Stage", "Mandora Stage", "Orbit Stage"],
   },
   {
     id: "southside-2026",
@@ -37,6 +39,7 @@ export const festivals: Festival[] = [
     dates: "18.-21. Juni 2026",
     note: "Offizielle Zeiten aus southside.de, Stand 28.05.2026.",
     sourceUrl: "https://southside.de/line-up/",
+    stageOrder: ["Green Stage", "Blue Stage", "Red Stage", "White Stage", "Electric Wave X White Stage", "TBA"],
   },
   {
     id: "stagetopia-2026",
@@ -45,6 +48,7 @@ export const festivals: Festival[] = [
     dates: "13. Juni 2026",
     note: "Line-up nach Festivalplaner; Uhrzeiten waren am 28.05.2026 noch nicht veroeffentlicht.",
     sourceUrl: "https://www.festivalplaner.de/festival/stagetopia-festival/",
+    stageOrder: ["TBA"],
   },
   {
     id: "highfield-2026",
@@ -53,6 +57,7 @@ export const festivals: Festival[] = [
     dates: "13.-16. August 2026",
     note: "Offizielles Line-up nach Tagen; Uhrzeiten waren am 28.05.2026 noch nicht veroeffentlicht.",
     sourceUrl: "https://highfield.de/line-up/",
+    stageOrder: ["Concert", "Electric Beach"],
   },
 ];
 

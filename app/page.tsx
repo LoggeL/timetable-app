@@ -36,6 +36,13 @@ function festivalStart(id: FestivalId) {
   return Math.min(...dates);
 }
 
+function orderedStages(stageNames: string[], preferredOrder: string[]) {
+  const existing = new Set(stageNames);
+  const ordered = preferredOrder.filter((stage) => existing.has(stage));
+  const extra = stageNames.filter((stage) => !preferredOrder.includes(stage)).sort((a, b) => a.localeCompare(b));
+  return [...ordered, ...extra];
+}
+
 const festivalBackgrounds: Record<FestivalId, string> = {
   "rock-am-ring-2026": "/images/rock-am-ring-bg.png",
   "stagetopia-2026": "/images/stagetopia-bg.png",
@@ -156,8 +163,8 @@ export default function Home() {
 
   const timedActs = visibleActs.filter((act) => minutes(act.start) !== null && minutes(act.end) !== null);
   const untimedActs = visibleActs.filter((act) => minutes(act.start) === null || minutes(act.end) === null);
-  const stages = Array.from(new Set((timedActs.length ? timedActs : visibleActs).map((act) => act.stage)));
-  const untimedStages = Array.from(new Set(untimedActs.map((act) => act.stage)));
+  const stages = orderedStages(Array.from(new Set((timedActs.length ? timedActs : visibleActs).map((act) => act.stage))), festival.stageOrder);
+  const untimedStages = orderedStages(Array.from(new Set(untimedActs.map((act) => act.stage))), festival.stageOrder);
   const firstActStart = timedActs.length ? Math.min(...timedActs.map((act) => minutes(act.start) ?? 0)) : 0;
   const lastActEnd = timedActs.length ? Math.max(...timedActs.map((act) => minutes(act.end) ?? 0)) : 0;
   const timelineStart = timedActs.length ? firstActStart - TIMELINE_MARGIN_MINUTES : 0;
