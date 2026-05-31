@@ -4,14 +4,14 @@ import "./globals.css";
 export const metadata: Metadata = {
   metadataBase: new URL("https://timetable.logge.top"),
   title: "Timetable",
-  description: "Private Festival-Abstimmung fuer Gruppen: Timetables vergleichen, Acts auswaehlen und sehen, wer wohin will.",
+  description: "Private Festival-Abstimmung für Gruppen: Timetables vergleichen, Acts auswählen und sehen, wer wohin will.",
   icons: {
     icon: "/icon.png",
     apple: "/apple-icon.png",
   },
   openGraph: {
     title: "Timetable",
-    description: "Private Festival-Abstimmung fuer Gruppen: Timetables vergleichen, Acts auswaehlen und sehen, wer wohin will.",
+    description: "Private Festival-Abstimmung für Gruppen: Timetables vergleichen, Acts auswählen und sehen, wer wohin will.",
     url: "https://timetable.logge.top",
     siteName: "Timetable",
     locale: "de_DE",
@@ -28,7 +28,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "Timetable",
-    description: "Private Festival-Abstimmung fuer Gruppen: Timetables vergleichen, Acts auswaehlen und sehen, wer wohin will.",
+    description: "Private Festival-Abstimmung für Gruppen: Timetables vergleichen, Acts auswählen und sehen, wer wohin will.",
     images: ["/og-image.png"],
   },
 };
