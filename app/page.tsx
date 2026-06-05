@@ -120,6 +120,11 @@ function PersonTags({ people, compact = false }: { people: string[]; compact?: b
   );
 }
 
+function MobilePeopleSummary({ people }: { people: string[] }) {
+  if (!people.length) return <span className="truncate">Noch niemand</span>;
+  return <span className="truncate">{people.join(", ")}</span>;
+}
+
 export default function Home() {
   const [festivalId, setFestivalId] = useState<FestivalId>("rock-am-ring-2026");
   const [day, setDay] = useState("");
@@ -357,26 +362,29 @@ export default function Home() {
             <div className="md:hidden">
               <div className="overflow-x-auto pb-4 [scrollbar-width:thin]">
                 <div className="min-w-[720px]" style={{ width: mobileTimelineWidth }}>
-                  <div className="sticky top-0 z-30 grid h-10 rounded-[8px] border border-white/10 bg-zinc-950/95 backdrop-blur" style={{ gridTemplateColumns: `repeat(${hourTicks.length || 1}, minmax(0, 1fr))` }}>
-                    {hourTicks.map((tick) => (
-                      <div key={tick} className="relative border-l border-white/10 first:border-l-0">
-                        <span className="absolute left-1 top-2 text-[11px] font-black text-zinc-400">{formatTick(tick)}</span>
-                      </div>
-                    ))}
-                    {nowTop !== null && currentMinutes !== null && (
-                      <div className="pointer-events-none absolute top-0 z-20 h-full border-l-2 border-red-500 shadow-[0_0_14px_rgba(239,68,68,0.75)]" style={{ left: (currentMinutes - timelineStart) * MOBILE_PIXELS_PER_MINUTE }}>
-                        <span className="absolute -top-1 left-1 rounded-full bg-red-500 px-1.5 py-0.5 text-[10px] font-black text-white">Jetzt</span>
-                      </div>
-                    )}
+                  <div className="sticky top-0 z-30 grid h-10 rounded-[8px] border border-white/10 bg-zinc-950/95 backdrop-blur" style={{ gridTemplateColumns: "78px 1fr" }}>
+                    <div className="border-r border-white/10" />
+                    <div className="relative overflow-hidden">
+                      {hourTicks.map((tick) => (
+                        <div key={tick} className="absolute bottom-0 top-0 border-l border-white/10" style={{ left: (tick - timelineStart) * MOBILE_PIXELS_PER_MINUTE }}>
+                          <span className="absolute left-1 top-2 text-[11px] font-black text-zinc-400">{formatTick(tick)}</span>
+                        </div>
+                      ))}
+                      {nowTop !== null && currentMinutes !== null && (
+                        <div className="pointer-events-none absolute top-0 z-20 h-full border-l-2 border-red-500 shadow-[0_0_14px_rgba(239,68,68,0.75)]" style={{ left: (currentMinutes - timelineStart) * MOBILE_PIXELS_PER_MINUTE }}>
+                          <span className="absolute -top-1 left-1 rounded-full bg-red-500 px-1.5 py-0.5 text-[10px] font-black text-white">Jetzt</span>
+                        </div>
+                      )}
+                    </div>
                   </div>
 
                   <div className="mt-2 flex flex-col gap-2">
                     {stages.map((stage) => (
-                      <section key={stage} className="grid min-h-[122px] rounded-[8px] border border-white/10 bg-[rgba(15,23,27,0.86)]" style={{ gridTemplateColumns: "78px 1fr" }}>
+                      <section key={stage} className="grid min-h-[108px] rounded-[8px] border border-white/10 bg-[rgba(15,23,27,0.86)]" style={{ gridTemplateColumns: "78px 1fr" }}>
                         <div className="sticky left-0 z-20 flex items-center rounded-l-[8px] border-r border-white/10 bg-zinc-950/95 px-2">
                           <h3 className="text-[11px] font-black leading-tight text-zinc-100">{stage}</h3>
                         </div>
-                        <div className="relative min-h-[122px] overflow-hidden">
+                        <div className="relative min-h-[108px] overflow-hidden">
                           {hourTicks.map((tick) => (
                             <div key={tick} className="pointer-events-none absolute bottom-0 top-0 border-l border-white/10" style={{ left: (tick - timelineStart) * MOBILE_PIXELS_PER_MINUTE }} />
                           ))}
@@ -395,7 +403,7 @@ export default function Home() {
                                 key={act.id}
                                 onClick={() => vote(act.id)}
                                 disabled={!name.trim() || busyAct === act.id}
-                                className={`absolute bottom-2 top-2 z-[1] flex flex-col items-start gap-1 overflow-hidden rounded-[8px] border px-2 py-1.5 text-left shadow-lg transition disabled:cursor-not-allowed disabled:opacity-60 ${currentActIds.has(act.id) ? "ring-2 ring-red-400/80" : ""} ${selected ? "border-green-300 bg-green-300/20" : "border-white/10 bg-zinc-900/95 hover:border-orange-300/70 hover:bg-zinc-800/95"}`}
+                                className={`absolute bottom-1.5 top-1.5 z-[1] flex flex-col items-start gap-1 overflow-hidden rounded-[8px] border px-2 py-1.5 text-left shadow-lg transition disabled:cursor-not-allowed disabled:opacity-60 ${currentActIds.has(act.id) ? "ring-2 ring-red-400/80" : ""} ${selected ? "border-green-300 bg-green-300/20" : "border-white/10 bg-zinc-900/95 hover:border-orange-300/70 hover:bg-zinc-800/95"}`}
                                 style={{ left: (start - timelineStart) * MOBILE_PIXELS_PER_MINUTE, width: mobileDuration(act) }}
                               >
                                 <span className="flex w-full items-center justify-between gap-1 text-[10px] font-bold uppercase text-zinc-400">
@@ -405,7 +413,7 @@ export default function Home() {
                                 <span className="line-clamp-2 text-[12px] font-black leading-tight">{act.artist}</span>
                                 <span className="mt-auto flex min-h-4 max-w-full items-center gap-1 overflow-hidden text-[10px] text-zinc-300">
                                   <Users size={11} />
-                                  <PersonTags people={people} compact />
+                                  <MobilePeopleSummary people={people} />
                                 </span>
                               </button>
                             );
