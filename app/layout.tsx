@@ -1,10 +1,17 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
+import { OfflineRuntime } from "@/components/OfflineRuntime";
 import "./globals.css";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://timetable.logge.top"),
   title: "Timetable",
   description: "Private Festival-Abstimmung für Gruppen: Timetables vergleichen, Acts auswählen und sehen, wer wohin will.",
+  manifest: "/manifest.webmanifest",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "Timetable",
+  },
   icons: {
     icon: "/icon.png",
     apple: "/apple-icon.png",
@@ -33,10 +40,18 @@ export const metadata: Metadata = {
   },
 };
 
+export const viewport: Viewport = {
+  themeColor: "#f97316",
+  colorScheme: "dark",
+};
+
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="de">
-      <body>{children}</body>
+      <body>
+        <OfflineRuntime />
+        {children}
+      </body>
     </html>
   );
 }

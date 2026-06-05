@@ -61,6 +61,7 @@ const PIXELS_PER_MINUTE = 1.8;
 const HOUR = 60;
 const TIMELINE_MARGIN_MINUTES = 30;
 const NAME_STORAGE_KEY = "timetable-person-name";
+const VOTES_STORAGE_KEY = "timetable-votes-cache";
 
 function formatTick(totalMinutes: number) {
   const hour = Math.floor(totalMinutes / 60) % 24;
@@ -77,6 +78,16 @@ function colorForName(name: string) {
     border: `hsla(${hue}, 82%, 64%, 0.78)`,
     text: `hsl(${hue}, 88%, 86%)`,
   };
+}
+
+function togglePerson(people: string[], name: string) {
+  const current = new Set(people);
+  if (current.has(name)) {
+    current.delete(name);
+  } else {
+    current.add(name);
+  }
+  return Array.from(current).sort((a, b) => a.localeCompare(b, "de"));
 }
 
 function PersonTags({ people, compact = false }: { people: string[]; compact?: boolean }) {
@@ -115,10 +126,24 @@ export default function Home() {
   const autoScrolledRef = useRef("");
 
   useEffect(() => {
+    const cachedVotes = window.localStorage.getItem(VOTES_STORAGE_KEY);
+    if (cachedVotes) {
+      try {
+        setVotes(JSON.parse(cachedVotes) as VoteState);
+      } catch {
+        window.localStorage.removeItem(VOTES_STORAGE_KEY);
+      }
+    }
+
     fetch("/api/votes")
       .then((res) => res.json())
-      .then(setVotes)
-      .catch(() => setVotes({}));
+      .then((nextVotes: VoteState) => {
+        setVotes(nextVotes);
+        window.localStorage.setItem(VOTES_STORAGE_KEY, JSON.stringify(nextVotes));
+      })
+      .catch(() => {
+        if (!cachedVotes) setVotes({});
+      });
   }, []);
 
   useEffect(() => {
@@ -221,15 +246,31 @@ export default function Home() {
   }, [festivalId, nowTop, selectedDay]);
 
   async function vote(actId: string) {
-    if (!name.trim()) return;
+    const cleanName = name.trim();
+    if (!cleanName) return;
     setBusyAct(actId);
-    const res = await fetch("/api/votes", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ actId, name }),
-    });
-    setVotes(await res.json());
-    setBusyAct(null);
+
+    const optimisticVotes: VoteState = {
+      ...votes,
+      [actId]: togglePerson(votes[actId] ?? [], cleanName),
+    };
+    setVotes(optimisticVotes);
+    window.localStorage.setItem(VOTES_STORAGE_KEY, JSON.stringify(optimisticVotes));
+
+    try {
+      const res = await fetch("/api/votes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ actId, name: cleanName }),
+      });
+      const nextVotes = (await res.json()) as VoteState;
+      setVotes(nextVotes);
+      window.localStorage.setItem(VOTES_STORAGE_KEY, JSON.stringify(nextVotes));
+    } catch {
+      // Keep the local optimistic vote so the app remains useful in the field without reception.
+    } finally {
+      setBusyAct(null);
+    }
   }
 
   function handleNameChange(value: string) {
