@@ -113,7 +113,7 @@ function PersonTags({ people, compact = false }: { people: string[]; compact?: b
 }
 
 export default function Home() {
-  const [festivalId, setFestivalId] = useState<FestivalId>("rock-am-ring-2026");
+  const [festivalId, setFestivalId] = useState<FestivalId>("southside-2026");
   const [day, setDay] = useState("");
   const [name, setName] = useState("");
   const [nameLoaded, setNameLoaded] = useState(false);
@@ -168,7 +168,10 @@ export default function Home() {
     return () => window.clearInterval(timer);
   }, []);
 
-  const sortedFestivals = [...festivals].sort((a, b) => festivalStart(a.id) - festivalStart(b.id));
+  const includeArchived = typeof window !== "undefined" && new URLSearchParams(window.location.search).get("archive") === "1";
+  const sortedFestivals = festivals
+    .filter((item) => includeArchived || !item.archived)
+    .sort((a, b) => festivalStart(a.id) - festivalStart(b.id));
   const festival = sortedFestivals.find((item) => item.id === festivalId) ?? sortedFestivals[0];
   const backgroundImage = festivalBackgrounds[festival.id];
   const festivalActs = acts.filter((act) => act.festivalId === festivalId);
@@ -317,7 +320,7 @@ export default function Home() {
           <div className="flex flex-wrap gap-2">
             {sortedFestivals.map((item) => (
               <button key={item.id} onClick={() => { setFestivalId(item.id); setDay(""); }} className={`rounded-[8px] px-4 py-2 text-sm font-bold transition ${item.id === festivalId ? "bg-orange-500 text-white" : "bg-white/10 text-zinc-200 hover:bg-white/15"}`}>
-                {item.name}
+                {item.name}{item.archived ? " (Archiv)" : ""}
               </button>
             ))}
           </div>

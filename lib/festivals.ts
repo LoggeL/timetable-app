@@ -20,6 +20,7 @@ export type Festival = {
   note: string;
   sourceUrl: string;
   stageOrder: string[];
+  archived?: boolean;
 };
 
 export const festivals: Festival[] = [
@@ -31,6 +32,7 @@ export const festivals: Festival[] = [
     note: "Offizielle Zeiten von rock-am-ring.com, Stand 05.06.2026.",
     sourceUrl: "https://www.rock-am-ring.com/timetable",
     stageOrder: ["Utopia Stage", "Mandora Stage", "Orbit Stage"],
+    archived: true,
   },
   {
     id: "southside-2026",
