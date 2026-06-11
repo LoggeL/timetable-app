@@ -121,6 +121,7 @@ export default function Home() {
   const [votes, setVotes] = useState<VoteState>({});
   const [busyAct, setBusyAct] = useState<string | null>(null);
   const [now, setNow] = useState<Date | null>(null);
+  const [includeArchived, setIncludeArchived] = useState(false);
   const nowLineRef = useRef<HTMLDivElement | null>(null);
   const autoSelectedCurrentDayRef = useRef(false);
   const autoScrolledRef = useRef("");
@@ -168,7 +169,10 @@ export default function Home() {
     return () => window.clearInterval(timer);
   }, []);
 
-  const includeArchived = typeof window !== "undefined" && new URLSearchParams(window.location.search).get("archive") === "1";
+  useEffect(() => {
+    setIncludeArchived(new URLSearchParams(window.location.search).get("archive") === "1");
+  }, []);
+
   const sortedFestivals = festivals
     .filter((item) => includeArchived || !item.archived)
     .sort((a, b) => festivalStart(a.id) - festivalStart(b.id));
@@ -323,12 +327,21 @@ export default function Home() {
                 {item.name}{item.archived ? " (Archiv)" : ""}
               </button>
             ))}
-            <a
-              href={includeArchived ? "/" : "/?archive=1"}
+            <button
+              type="button"
+              onClick={() => {
+                const nextIncludeArchived = !includeArchived;
+                setIncludeArchived(nextIncludeArchived);
+                window.history.replaceState(null, "", nextIncludeArchived ? "?archive=1" : "/");
+                if (!nextIncludeArchived && festival.archived) {
+                  setFestivalId("southside-2026");
+                  setDay("");
+                }
+              }}
               className="rounded-[8px] border border-white/10 bg-white/5 px-4 py-2 text-sm font-bold text-zinc-300 transition hover:bg-white/10"
             >
               {includeArchived ? "Archiv ausblenden" : "Archiv anzeigen"}
-            </a>
+            </button>
           </div>
 
           <div className="flex flex-wrap gap-2">
