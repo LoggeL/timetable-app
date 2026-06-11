@@ -323,6 +323,12 @@ export default function Home() {
                 {item.name}{item.archived ? " (Archiv)" : ""}
               </button>
             ))}
+            <a
+              href={includeArchived ? "/" : "/?archive=1"}
+              className="rounded-[8px] border border-white/10 bg-white/5 px-4 py-2 text-sm font-bold text-zinc-300 transition hover:bg-white/10"
+            >
+              {includeArchived ? "Archiv ausblenden" : "Archiv anzeigen"}
+            </a>
           </div>
 
           <div className="flex flex-wrap gap-2">
