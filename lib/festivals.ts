@@ -51,6 +51,7 @@ export const festivals: Festival[] = [
     note: "Offizielle Zeiten von stagetopia.de, Stand 01.06.2026.",
     sourceUrl: "https://stagetopia.de/",
     stageOrder: ["Hip Hop", "Rock", "Electro", "Trance", "Club"],
+    archived: true,
   },
   {
     id: "highfield-2026",
