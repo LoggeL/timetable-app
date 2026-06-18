@@ -1,13 +1,16 @@
-const CACHE_VERSION = "timetable-offline-v2026-06-05-1";
+const CACHE_VERSION = "timetable-offline-v2026-06-18-1";
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`;
 const IMAGE_CACHE = `${CACHE_VERSION}-images`;
 const VOTES_CACHE = `${CACHE_VERSION}-votes`;
-const MAX_RUNTIME_ENTRIES = 90;
-const MAX_IMAGE_ENTRIES = 40;
+const POST_QUEUE_DB = "timetable-offline-db";
+const POST_QUEUE_STORE = "vote-posts";
+const MAX_RUNTIME_ENTRIES = 180;
+const MAX_IMAGE_ENTRIES = 80;
 
 const APP_SHELL = [
   "/",
+  "/api/votes",
   "/manifest.webmanifest",
   "/icon.png",
   "/apple-icon.png",
@@ -31,19 +34,31 @@ self.addEventListener("activate", (event) => {
     caches.keys()
       .then((keys) => Promise.all(keys.filter((key) => key.startsWith("timetable-offline-") && !key.startsWith(CACHE_VERSION)).map((key) => caches.delete(key))))
       .then(() => self.clients.claim())
+      .then(() => notifyClients({ type: "OFFLINE_READY" }))
+      .then(() => replayQueuedVotePosts())
   );
 });
 
 self.addEventListener("message", (event) => {
   if (event.data?.type === "SKIP_WAITING") self.skipWaiting();
+  if (event.data?.type === "SYNC_VOTES") event.waitUntil(replayQueuedVotePosts());
+});
+
+self.addEventListener("sync", (event) => {
+  if (event.tag === "sync-votes") event.waitUntil(replayQueuedVotePosts());
 });
 
 self.addEventListener("fetch", (event) => {
   const request = event.request;
-  if (request.method !== "GET") return;
-
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
+
+  if (request.method === "POST" && url.pathname === "/api/votes") {
+    event.respondWith(votePostHandler(request));
+    return;
+  }
+
+  if (request.method !== "GET") return;
 
   if (url.pathname === "/api/votes") {
     event.respondWith(networkFirst(request, VOTES_CACHE));
@@ -142,6 +157,125 @@ async function staleWhileRevalidate(request, cacheName, maxEntries) {
   return cached || (await freshPromise) || offlineResponse();
 }
 
+async function votePostHandler(request) {
+  const body = await request.clone().text();
+  try {
+    const fresh = await fetch(request);
+    if (!fresh.ok) throw new Error(`Vote POST failed: ${fresh.status}`);
+    await cacheVotesResponse(fresh.clone());
+    return fresh;
+  } catch {
+    const payload = parseVoteBody(body);
+    if (!payload) return offlineJsonResponse();
+    const queuedVote = { id: `${Date.now()}-${Math.random().toString(36).slice(2)}`, payload, createdAt: Date.now() };
+    await addQueuedVotePost(queuedVote);
+    await self.registration.sync?.register("sync-votes").catch(() => undefined);
+    const cachedVotes = await readCachedVotes();
+    const nextVotes = togglePerson(cachedVotes, payload.actId, payload.name);
+    await writeCachedVotes(nextVotes);
+    return new Response(JSON.stringify(nextVotes), {
+      status: 202,
+      headers: { "Content-Type": "application/json", "X-Timetable-Offline-Queued": "1" }
+    });
+  }
+}
+
+function parseVoteBody(body) {
+  try {
+    const payload = JSON.parse(body);
+    if (!payload.actId || !payload.name?.trim()) return null;
+    return { actId: String(payload.actId), name: String(payload.name).trim().slice(0, 40) };
+  } catch {
+    return null;
+  }
+}
+
+async function replayQueuedVotePosts() {
+  const queuedVotes = await getQueuedVotePosts();
+  for (const queuedVote of queuedVotes) {
+    try {
+      const response = await fetch("/api/votes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(queuedVote.payload)
+      });
+      if (!response.ok) throw new Error(`Vote replay failed: ${response.status}`);
+      await cacheVotesResponse(response.clone());
+      await deleteQueuedVotePost(queuedVote.id);
+    } catch {
+      return;
+    }
+  }
+  await notifyClients({ type: "VOTES_SYNCED" });
+}
+
+async function cacheVotesResponse(response) {
+  if (!isCacheable(response)) return;
+  const cache = await caches.open(VOTES_CACHE);
+  await cache.put("/api/votes", response);
+}
+
+async function readCachedVotes() {
+  const cached = await caches.match("/api/votes");
+  if (!cached) return {};
+  try {
+    return await cached.json();
+  } catch {
+    return {};
+  }
+}
+
+async function writeCachedVotes(votes) {
+  const cache = await caches.open(VOTES_CACHE);
+  await cache.put("/api/votes", new Response(JSON.stringify(votes), { headers: { "Content-Type": "application/json" } }));
+}
+
+function togglePerson(votes, actId, name) {
+  const current = new Set(votes[actId] ?? []);
+  if (current.has(name)) current.delete(name);
+  else current.add(name);
+  return {
+    ...votes,
+    [actId]: Array.from(current).sort((a, b) => a.localeCompare(b, "de"))
+  };
+}
+
+function openVoteQueueDb() {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(POST_QUEUE_DB, 1);
+    request.onupgradeneeded = () => request.result.createObjectStore(POST_QUEUE_STORE, { keyPath: "id" });
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+}
+
+async function withVoteStore(mode, callback) {
+  const db = await openVoteQueueDb();
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction(POST_QUEUE_STORE, mode);
+    const store = transaction.objectStore(POST_QUEUE_STORE);
+    const result = callback(store);
+    transaction.oncomplete = () => resolve(result);
+    transaction.onerror = () => reject(transaction.error);
+  }).finally(() => db.close());
+}
+
+async function addQueuedVotePost(queuedVote) {
+  return withVoteStore("readwrite", (store) => store.put(queuedVote));
+}
+
+async function deleteQueuedVotePost(id) {
+  return withVoteStore("readwrite", (store) => store.delete(id));
+}
+
+async function getQueuedVotePosts() {
+  const request = await withVoteStore("readonly", (store) => store.getAll());
+  return new Promise((resolve, reject) => {
+    request.onsuccess = () => resolve(request.result.sort((a, b) => a.createdAt - b.createdAt));
+    request.onerror = () => reject(request.error);
+  });
+}
+
 function isCacheable(response) {
   return response && response.ok && (response.type === "basic" || response.type === "default");
 }
@@ -151,6 +285,11 @@ async function trimCache(cacheName, maxEntries = 80) {
   const cache = await caches.open(cacheName);
   const keys = await cache.keys();
   await Promise.all(keys.slice(0, Math.max(0, keys.length - maxEntries)).map((key) => cache.delete(key)));
+}
+
+async function notifyClients(message) {
+  const clients = await self.clients.matchAll({ includeUncontrolled: true });
+  clients.forEach((client) => client.postMessage(message));
 }
 
 function offlineJsonResponse() {

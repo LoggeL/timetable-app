@@ -62,6 +62,42 @@ const HOUR = 60;
 const TIMELINE_MARGIN_MINUTES = 30;
 const NAME_STORAGE_KEY = "timetable-person-name";
 const VOTES_STORAGE_KEY = "timetable-votes-cache";
+const VOTE_QUEUE_STORAGE_KEY = "timetable-vote-queue";
+const OFFLINE_EVENT_NAME = "timetable:offline-cache-ready";
+
+type QueuedVote = {
+  id: string;
+  actId: string;
+  name: string;
+  createdAt: number;
+};
+
+type ServiceWorkerRegistrationWithSync = ServiceWorkerRegistration & {
+  sync?: {
+    register: (tag: string) => Promise<void>;
+  };
+};
+
+function readQueuedVotes() {
+  if (typeof window === "undefined") return [] as QueuedVote[];
+  try {
+    return JSON.parse(window.localStorage.getItem(VOTE_QUEUE_STORAGE_KEY) ?? "[]") as QueuedVote[];
+  } catch {
+    window.localStorage.removeItem(VOTE_QUEUE_STORAGE_KEY);
+    return [] as QueuedVote[];
+  }
+}
+
+function writeQueuedVotes(queue: QueuedVote[]) {
+  window.localStorage.setItem(VOTE_QUEUE_STORAGE_KEY, JSON.stringify(queue));
+}
+
+function queueVote(actId: string, name: string) {
+  const queue = readQueuedVotes();
+  const queuedVote = { id: `${Date.now()}-${crypto.randomUUID?.() ?? Math.random().toString(36).slice(2)}`, actId, name, createdAt: Date.now() };
+  writeQueuedVotes([...queue, queuedVote]);
+  return queuedVote;
+}
 
 function formatTick(totalMinutes: number) {
   const hour = Math.floor(totalMinutes / 60) % 24;
@@ -88,6 +124,15 @@ function togglePerson(people: string[], name: string) {
     current.add(name);
   }
   return Array.from(current).sort((a, b) => a.localeCompare(b, "de"));
+}
+
+function applyQueuedVotes(serverVotes: VoteState, queuedVotes: QueuedVote[]) {
+  return queuedVotes.reduce<VoteState>((currentVotes, queuedVote) => {
+    return {
+      ...currentVotes,
+      [queuedVote.actId]: togglePerson(currentVotes[queuedVote.actId] ?? [], queuedVote.name),
+    };
+  }, serverVotes);
 }
 
 function PersonTags({ people, compact = false }: { people: string[]; compact?: boolean }) {
@@ -131,6 +176,8 @@ export default function Home() {
   const [busyAct, setBusyAct] = useState<string | null>(null);
   const [now, setNow] = useState<Date | null>(null);
   const [includeArchived, setIncludeArchived] = useState(false);
+  const [isOfflineReady, setIsOfflineReady] = useState(false);
+  const [pendingVoteCount, setPendingVoteCount] = useState(0);
   const nowLineRef = useRef<HTMLDivElement | null>(null);
   const autoSelectedCurrentDayRef = useRef(false);
   const autoScrolledRef = useRef("");
@@ -144,16 +191,75 @@ export default function Home() {
         window.localStorage.removeItem(VOTES_STORAGE_KEY);
       }
     }
+    setPendingVoteCount(readQueuedVotes().length);
 
-    fetch("/api/votes")
-      .then((res) => res.json())
-      .then((nextVotes: VoteState) => {
-        setVotes(nextVotes);
-        window.localStorage.setItem(VOTES_STORAGE_KEY, JSON.stringify(nextVotes));
-      })
-      .catch(() => {
+    const refreshVotes = async () => {
+      try {
+        const res = await fetch("/api/votes");
+        const nextVotes = (await res.json()) as VoteState;
+        setVotes((currentVotes) => {
+          const mergedVotes = applyQueuedVotes(nextVotes, readQueuedVotes());
+          window.localStorage.setItem(VOTES_STORAGE_KEY, JSON.stringify(mergedVotes));
+          return mergedVotes;
+        });
+      } catch {
         if (!cachedVotes) setVotes({});
-      });
+      }
+    };
+
+    refreshVotes();
+  }, []);
+
+  useEffect(() => {
+    const updateOfflineReady = async () => {
+      if (!("serviceWorker" in navigator) || !("caches" in window)) return;
+      const registration = await navigator.serviceWorker.ready.catch(() => null);
+      const cacheNames = await caches.keys().catch(() => []);
+      setIsOfflineReady(Boolean(registration && cacheNames.some((name) => name.startsWith("timetable-offline-"))));
+    };
+
+    updateOfflineReady();
+    window.addEventListener(OFFLINE_EVENT_NAME, updateOfflineReady);
+    return () => window.removeEventListener(OFFLINE_EVENT_NAME, updateOfflineReady);
+  }, []);
+
+  useEffect(() => {
+    const syncQueuedVotes = async () => {
+      if (!navigator.onLine) return;
+      const queue = readQueuedVotes();
+      if (!queue.length) {
+        setPendingVoteCount(0);
+        return;
+      }
+
+      let remaining = [...queue];
+      for (const queuedVote of queue) {
+        try {
+          const res = await fetch("/api/votes", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ actId: queuedVote.actId, name: queuedVote.name }),
+          });
+          if (!res.ok) throw new Error(`Vote sync failed: ${res.status}`);
+          const nextVotes = (await res.json()) as VoteState;
+          remaining = remaining.filter((item) => item.id !== queuedVote.id);
+          writeQueuedVotes(remaining);
+          setPendingVoteCount(remaining.length);
+          setVotes(applyQueuedVotes(nextVotes, remaining));
+          window.localStorage.setItem(VOTES_STORAGE_KEY, JSON.stringify(applyQueuedVotes(nextVotes, remaining)));
+        } catch {
+          break;
+        }
+      }
+    };
+
+    syncQueuedVotes();
+    window.addEventListener("online", syncQueuedVotes);
+    document.addEventListener("visibilitychange", syncQueuedVotes);
+    return () => {
+      window.removeEventListener("online", syncQueuedVotes);
+      document.removeEventListener("visibilitychange", syncQueuedVotes);
+    };
   }, []);
 
   useEffect(() => {
@@ -290,11 +396,17 @@ export default function Home() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ actId, name: cleanName }),
       });
+      if (!res.ok) throw new Error(`Vote failed: ${res.status}`);
       const nextVotes = (await res.json()) as VoteState;
-      setVotes(nextVotes);
-      window.localStorage.setItem(VOTES_STORAGE_KEY, JSON.stringify(nextVotes));
+      const mergedVotes = applyQueuedVotes(nextVotes, readQueuedVotes());
+      setVotes(mergedVotes);
+      window.localStorage.setItem(VOTES_STORAGE_KEY, JSON.stringify(mergedVotes));
     } catch {
-      // Keep the local optimistic vote so the app remains useful in the field without reception.
+      queueVote(actId, cleanName);
+      setPendingVoteCount(readQueuedVotes().length);
+      void navigator.serviceWorker?.ready
+        .then((registration) => (registration as ServiceWorkerRegistrationWithSync).sync?.register("sync-votes"))
+        .catch(() => undefined);
     } finally {
       setBusyAct(null);
     }
@@ -346,7 +458,20 @@ export default function Home() {
             </div>
           </div>
 
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <span
+              className={`rounded-full border px-3 py-1.5 text-xs font-black ${
+                isOfflineReady ? "border-green-300/50 bg-green-400/10 text-green-200" : "border-orange-300/40 bg-orange-400/10 text-orange-200"
+              }`}
+              title="Die App speichert Zeitplan, Assets und lokale Stimmen auf diesem Gerät."
+            >
+              {isOfflineReady ? "Offline bereit" : "Offline wird vorbereitet"}
+            </span>
+            {pendingVoteCount > 0 && (
+              <span className="rounded-full border border-sky-300/40 bg-sky-400/10 px-3 py-1.5 text-xs font-black text-sky-200">
+                {pendingVoteCount} Stimme{pendingVoteCount === 1 ? "" : "n"} wartet/warten auf Sync
+              </span>
+            )}
             {sortedFestivals.map((item) => (
               <button
                 key={item.id}

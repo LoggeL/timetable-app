@@ -3,7 +3,8 @@
 import { useEffect } from "react";
 
 const SW_URL = "/sw.js";
-const PRECACHE_NAME = "timetable-offline-v2026-06-05-1-client";
+const PRECACHE_NAME = "timetable-offline-v2026-06-18-1-client";
+const OFFLINE_EVENT_NAME = "timetable:offline-cache-ready";
 const OFFLINE_CORE_URLS = [
   "/",
   "/api/votes",
@@ -45,6 +46,7 @@ async function cacheCurrentPageShell() {
   await Promise.allSettled(
     urls.map((url) => cache.add(new Request(url, { cache: "reload" }))),
   );
+  window.dispatchEvent(new Event(OFFLINE_EVENT_NAME));
 }
 
 export function OfflineRuntime() {
@@ -57,11 +59,23 @@ export function OfflineRuntime() {
       if (cancelled) return;
       navigator.serviceWorker
         .register(SW_URL)
-        .then(() => navigator.serviceWorker.ready)
-        .then(() => cacheCurrentPageShell())
+        .then((registration) => {
+          registration.waiting?.postMessage({ type: "SKIP_WAITING" });
+          return navigator.serviceWorker.ready;
+        })
+        .then((registration) => {
+          registration.active?.postMessage({ type: "SYNC_VOTES" });
+          return cacheCurrentPageShell();
+        })
         .catch((error) => {
           console.warn("Offline setup failed", error);
         });
+
+      navigator.serviceWorker.addEventListener("message", (event) => {
+        if (event.data?.type === "OFFLINE_READY" || event.data?.type === "VOTES_SYNCED") {
+          window.dispatchEvent(new Event(OFFLINE_EVENT_NAME));
+        }
+      });
     });
 
     return () => {
