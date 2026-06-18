@@ -197,11 +197,9 @@ export default function Home() {
       try {
         const res = await fetch("/api/votes");
         const nextVotes = (await res.json()) as VoteState;
-        setVotes((currentVotes) => {
-          const mergedVotes = applyQueuedVotes(nextVotes, readQueuedVotes());
-          window.localStorage.setItem(VOTES_STORAGE_KEY, JSON.stringify(mergedVotes));
-          return mergedVotes;
-        });
+        const mergedVotes = applyQueuedVotes(nextVotes, readQueuedVotes());
+        setVotes(mergedVotes);
+        window.localStorage.setItem(VOTES_STORAGE_KEY, JSON.stringify(mergedVotes));
       } catch {
         if (!cachedVotes) setVotes({});
       }
@@ -225,6 +223,7 @@ export default function Home() {
 
   useEffect(() => {
     const syncQueuedVotes = async () => {
+      navigator.serviceWorker?.controller?.postMessage({ type: "SYNC_VOTES" });
       if (!navigator.onLine) return;
       const queue = readQueuedVotes();
       if (!queue.length) {
