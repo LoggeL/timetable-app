@@ -1,4 +1,4 @@
-const CACHE_VERSION = "timetable-offline-v2026-06-19-2";
+const CACHE_VERSION = "timetable-offline-v2026-06-19-3";
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`;
 const IMAGE_CACHE = `${CACHE_VERSION}-images`;
@@ -63,12 +63,12 @@ self.addEventListener("fetch", (event) => {
   if (request.method !== "GET") return;
 
   if (url.pathname === "/api/votes") {
-    event.respondWith(networkFirst(request, VOTES_CACHE));
+    event.respondWith(staleWhileRevalidate(request, VOTES_CACHE));
     return;
   }
 
   if (isNavigationRequest(request)) {
-    event.respondWith(navigationHandler(request));
+    event.respondWith(cacheFirstNavigation(request));
     return;
   }
 
@@ -106,17 +106,18 @@ function isStaticAsset(url) {
   return /\.(css|js|mjs|json|txt|webmanifest|woff2?)$/i.test(url.pathname);
 }
 
-async function navigationHandler(request) {
-  try {
-    const fresh = await fetch(request);
-    if (isCacheable(fresh)) {
-      const cache = await caches.open(STATIC_CACHE);
-      cache.put("/", fresh.clone());
-    }
-    return fresh;
-  } catch {
-    return (await caches.match(request)) || (await caches.match("/")) || offlineResponse();
-  }
+async function cacheFirstNavigation(request) {
+  const cache = await caches.open(STATIC_CACHE);
+  const cached = (await cache.match(request)) || (await cache.match("/"));
+
+  const refresh = fetch(request)
+    .then(async (fresh) => {
+      if (isCacheable(fresh)) await cache.put("/", fresh.clone());
+      return fresh;
+    })
+    .catch(() => undefined);
+
+  return cached || (await refresh) || offlineResponse();
 }
 
 async function networkFirst(request, cacheName) {
