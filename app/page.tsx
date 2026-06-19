@@ -1,6 +1,6 @@
 "use client";
 
-import { CalendarDays, Check, Clock3, MapPin, Search, SearchX, Users } from "lucide-react";
+import { CalendarDays, Check, Clock3, Download, MapPin, Search, SearchX, Share, Smartphone, Users } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { acts, festivals, type Act, type FestivalId } from "@/lib/festivals";
 import type { VoteState } from "@/lib/votes";
@@ -76,6 +76,11 @@ type ServiceWorkerRegistrationWithSync = ServiceWorkerRegistration & {
   sync?: {
     register: (tag: string) => Promise<void>;
   };
+};
+
+type BeforeInstallPromptEvent = Event & {
+  prompt: () => Promise<void>;
+  userChoice: Promise<{ outcome: "accepted" | "dismissed"; platform: string }>;
 };
 
 function readQueuedVotes() {
@@ -178,6 +183,9 @@ export default function Home() {
   const [includeArchived, setIncludeArchived] = useState(false);
   const [isOfflineReady, setIsOfflineReady] = useState(false);
   const [pendingVoteCount, setPendingVoteCount] = useState(0);
+  const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+  const [isStandalone, setIsStandalone] = useState(false);
+  const [showInstallHelp, setShowInstallHelp] = useState(false);
   const nowLineRef = useRef<HTMLDivElement | null>(null);
   const autoSelectedCurrentDayRef = useRef(false);
   const autoScrolledRef = useRef("");
@@ -258,6 +266,27 @@ export default function Home() {
     return () => {
       window.removeEventListener("online", syncQueuedVotes);
       document.removeEventListener("visibilitychange", syncQueuedVotes);
+    };
+  }, []);
+
+  useEffect(() => {
+    const standalone = window.matchMedia("(display-mode: standalone)").matches || Boolean((navigator as Navigator & { standalone?: boolean }).standalone);
+    setIsStandalone(standalone);
+
+    const onBeforeInstallPrompt = (event: Event) => {
+      event.preventDefault();
+      setInstallPrompt(event as BeforeInstallPromptEvent);
+    };
+    const onAppInstalled = () => {
+      setInstallPrompt(null);
+      setIsStandalone(true);
+    };
+
+    window.addEventListener("beforeinstallprompt", onBeforeInstallPrompt);
+    window.addEventListener("appinstalled", onAppInstalled);
+    return () => {
+      window.removeEventListener("beforeinstallprompt", onBeforeInstallPrompt);
+      window.removeEventListener("appinstalled", onAppInstalled);
     };
   }, []);
 
@@ -421,6 +450,17 @@ export default function Home() {
     }
   }
 
+  async function installApp() {
+    if (installPrompt) {
+      await installPrompt.prompt();
+      const choice = await installPrompt.userChoice.catch(() => null);
+      if (choice?.outcome === "accepted") setInstallPrompt(null);
+      return;
+    }
+
+    setShowInstallHelp((current) => !current);
+  }
+
   const inputClass =
     "mt-1 w-full rounded-xl border border-white/10 bg-zinc-900/70 px-3 py-3 text-zinc-50 placeholder:text-zinc-500 outline-none backdrop-blur transition-all duration-200 focus:border-orange-400/60 focus:bg-zinc-900/90 focus:ring-4 focus:ring-orange-400/20";
 
@@ -466,10 +506,29 @@ export default function Home() {
             >
               {isOfflineReady ? "Offline bereit" : "Offline wird vorbereitet"}
             </span>
+            {!isStandalone && (
+              <button
+                type="button"
+                onClick={installApp}
+                className="tab-btn inline-flex items-center gap-2 rounded-xl border border-orange-300/40 bg-orange-400/15 px-4 py-2 text-sm font-black text-orange-100 shadow-lg shadow-orange-950/30 hover:bg-orange-400/25"
+              >
+                {installPrompt ? <Download size={16} /> : <Smartphone size={16} />}
+                App installieren
+              </button>
+            )}
             {pendingVoteCount > 0 && (
               <span className="rounded-full border border-sky-300/40 bg-sky-400/10 px-3 py-1.5 text-xs font-black text-sky-200">
                 {pendingVoteCount} Stimme{pendingVoteCount === 1 ? "" : "n"} wartet/warten auf Sync
               </span>
+            )}
+            {showInstallHelp && !isStandalone && !installPrompt && (
+              <div className="basis-full rounded-2xl border border-white/10 bg-zinc-950/75 p-3 text-sm text-zinc-200 shadow-xl">
+                <p className="font-black text-white">Installieren auf dem Handy</p>
+                <p className="mt-1 text-zinc-300">
+                  iPhone/Safari: <Share className="inline-block align-[-2px]" size={15} /> Teilen öffnen → <strong>Zum Home-Bildschirm</strong>.
+                  Android/Chrome: Browser-Menü öffnen → <strong>App installieren</strong> oder <strong>Zum Startbildschirm hinzufügen</strong>.
+                </p>
+              </div>
             )}
             {sortedFestivals.map((item) => (
               <button
