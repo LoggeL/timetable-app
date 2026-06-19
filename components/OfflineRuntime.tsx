@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 
 const SW_URL = "/sw.js";
-const PRECACHE_NAME = "timetable-offline-v2026-06-19-4-client";
+const PRECACHE_NAME = "timetable-offline-v2026-06-19-5-client";
 const OFFLINE_EVENT_NAME = "timetable:offline-cache-ready";
 const OFFLINE_CORE_URLS = [
   "/",
@@ -57,7 +57,13 @@ export function OfflineRuntime() {
 
     let cancelled = false;
 
-    window.addEventListener("load", () => {
+    const handleServiceWorkerMessage = (event: MessageEvent) => {
+      if (event.data?.type === "OFFLINE_READY" || event.data?.type === "VOTES_SYNCED") {
+        window.dispatchEvent(new Event(OFFLINE_EVENT_NAME));
+      }
+    };
+
+    const setupOffline = () => {
       if (cancelled) return;
       navigator.serviceWorker
         .register(SW_URL)
@@ -72,16 +78,17 @@ export function OfflineRuntime() {
         .catch((error) => {
           console.warn("Offline setup failed", error);
         });
+    };
 
-      navigator.serviceWorker.addEventListener("message", (event) => {
-        if (event.data?.type === "OFFLINE_READY" || event.data?.type === "VOTES_SYNCED") {
-          window.dispatchEvent(new Event(OFFLINE_EVENT_NAME));
-        }
-      });
-    });
+    navigator.serviceWorker.addEventListener("message", handleServiceWorkerMessage);
+
+    if (document.readyState === "complete") setupOffline();
+    else window.addEventListener("load", setupOffline, { once: true });
 
     return () => {
       cancelled = true;
+      window.removeEventListener("load", setupOffline);
+      navigator.serviceWorker.removeEventListener("message", handleServiceWorkerMessage);
     };
   }, []);
 

@@ -1,4 +1,4 @@
-const CACHE_VERSION = "timetable-offline-v2026-06-19-4";
+const CACHE_VERSION = "timetable-offline-v2026-06-19-5";
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`;
 const IMAGE_CACHE = `${CACHE_VERSION}-images`;
@@ -133,15 +133,19 @@ async function networkFirst(request, cacheName) {
 
 async function cacheFirst(request, cacheName, maxEntries) {
   const cache = await caches.open(cacheName);
-  const cached = await cache.match(request);
+  const cached = await cache.match(request) || await caches.match(request);
   if (cached) return cached;
 
-  const fresh = await fetch(request);
-  if (isCacheable(fresh)) {
-    await cache.put(request, fresh.clone());
-    await trimCache(cacheName, maxEntries);
+  try {
+    const fresh = await fetch(request);
+    if (isCacheable(fresh)) {
+      await cache.put(request, fresh.clone());
+      await trimCache(cacheName, maxEntries);
+    }
+    return fresh;
+  } catch {
+    return await offlineResponseFor(request);
   }
-  return fresh;
 }
 
 async function staleWhileRevalidate(request, cacheName, maxEntries) {
@@ -293,6 +297,12 @@ async function trimCache(cacheName, maxEntries = 80) {
 async function notifyClients(message) {
   const clients = await self.clients.matchAll({ includeUncontrolled: true });
   clients.forEach((client) => client.postMessage(message));
+}
+
+async function offlineResponseFor(request) {
+  const cached = await caches.match(request);
+  if (cached) return cached;
+  return isImageRequest(request, new URL(request.url)) ? new Response("", { status: 504 }) : offlineResponse();
 }
 
 function offlineJsonResponse() {
