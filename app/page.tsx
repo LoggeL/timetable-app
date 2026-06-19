@@ -1,6 +1,6 @@
 "use client";
 
-import { CalendarDays, Check, Clock3, Download, MapPin, Search, SearchX, Share, Smartphone, Users } from "lucide-react";
+import { CalendarDays, Check, CircleOff, Clock3, Download, MapPin, Search, SearchX, Share, Smartphone, Users } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { acts, festivals, type Act, type FestivalId } from "@/lib/festivals";
 import type { VoteState } from "@/lib/votes";
@@ -167,6 +167,15 @@ function LiveBadge() {
     <span className="inline-flex items-center gap-1 rounded-full bg-red-500/20 px-1.5 py-0.5 text-[10px] font-black tracking-wider text-red-300 ring-1 ring-red-400/50">
       <span className="animate-live-glow inline-block h-1.5 w-1.5 rounded-full bg-red-400" />
       LIVE
+    </span>
+  );
+}
+
+function CancelledBadge() {
+  return (
+    <span className="inline-flex items-center gap-1 rounded-full bg-red-600/25 px-1.5 py-0.5 text-[10px] font-black tracking-wider text-red-100 ring-1 ring-red-300/60">
+      <CircleOff size={12} />
+      ENTFÄLLT
     </span>
   );
 }
@@ -660,7 +669,8 @@ export default function Home() {
                         const end = minutes(act.end);
                         const people = votes[act.id] ?? [];
                         const selected = people.includes(name.trim());
-                        const isLive = currentActIds.has(act.id);
+                        const isCancelled = act.status === "cancelled";
+                        const isLive = !isCancelled && currentActIds.has(act.id);
                         const isPast = pastActIds.has(act.id);
                         if (start === null || end === null) return null;
 
@@ -668,15 +678,17 @@ export default function Home() {
                           <button
                             key={act.id}
                             onClick={() => vote(act.id)}
-                            disabled={!name.trim() || busyAct === act.id}
-                            title={!name.trim() ? "Erst Namen eingeben, dann abstimmen" : undefined}
+                            disabled={isCancelled || !name.trim() || busyAct === act.id}
+                            title={isCancelled ? act.note : !name.trim() ? "Erst Namen eingeben, dann abstimmen" : undefined}
                             className={`act-card animate-fade-in-up absolute left-2 right-2 z-[1] flex flex-col items-start gap-1.5 overflow-hidden rounded-xl border px-2.5 py-2 text-left shadow-lg disabled:cursor-not-allowed disabled:opacity-60 ${
                               isLive ? "ring-2 ring-red-400/80" : ""
                             } ${
                               selected
                                 ? "border-green-300/80 bg-gradient-to-br from-green-300/25 to-green-400/10 shadow-[0_0_20px_rgba(97,211,148,0.18)]"
-                                : "border-white/10 bg-zinc-900/95 hover:border-orange-300/70 hover:bg-zinc-800/95"
-                            } ${isPast && !isLive ? "opacity-50 saturate-50" : ""}`}
+                                : isCancelled
+                                  ? "border-red-300/70 bg-red-950/60 text-zinc-300"
+                                  : "border-white/10 bg-zinc-900/95 hover:border-orange-300/70 hover:bg-zinc-800/95"
+                            } ${isCancelled || (isPast && !isLive) ? "opacity-60 saturate-50" : ""}`}
                             style={{
                               top: (start - timelineStart) * PIXELS_PER_MINUTE,
                               height: duration(act),
@@ -686,11 +698,13 @@ export default function Home() {
                             <span className="flex w-full items-center justify-between gap-2 text-[11px] font-bold uppercase text-zinc-400">
                               <span className="inline-flex items-center gap-1 tabular-nums"><Clock3 size={13} />{act.start} - {act.end}</span>
                               <span className="inline-flex items-center gap-1.5">
+                                {isCancelled && <CancelledBadge />}
                                 {isLive && <LiveBadge />}
-                                {selected && <Check size={17} className="animate-scale-in shrink-0 text-green-300" />}
+                                {selected && !isCancelled && <Check size={17} className="animate-scale-in shrink-0 text-green-300" />}
                               </span>
                             </span>
-                            <span className="line-clamp-2 text-sm font-black leading-tight md:text-base">{act.artist}</span>
+                            <span className={isCancelled ? "line-clamp-2 text-sm font-black leading-tight line-through decoration-red-300/80 decoration-2 md:text-base" : "line-clamp-2 text-sm font-black leading-tight md:text-base"}>{act.artist}</span>
+                            {isCancelled && <span className="text-[11px] font-bold text-red-100/90">{act.note}</span>}
                             <span className="mt-auto flex min-h-5 max-w-full items-center gap-1 overflow-hidden text-[11px] text-zinc-300">
                               <Users size={13} className="shrink-0" />
                               <PersonTags people={people} compact />
@@ -748,24 +762,29 @@ function ActGrid({
             {visibleActs.filter((act) => act.stage === stage).map((act, actIndex) => {
               const people = votes[act.id] ?? [];
               const selected = people.includes(name.trim());
+              const isCancelled = act.status === "cancelled";
               return (
                 <button
                   key={act.id}
                   onClick={() => vote(act.id)}
-                  disabled={!name.trim() || busyAct === act.id}
-                  title={!name.trim() ? "Erst Namen eingeben, dann abstimmen" : undefined}
+                  disabled={isCancelled || !name.trim() || busyAct === act.id}
+                  title={isCancelled ? act.note : !name.trim() ? "Erst Namen eingeben, dann abstimmen" : undefined}
                   className={`act-card animate-fade-in-up group flex w-full flex-col items-start gap-3 rounded-xl border p-3 text-left disabled:cursor-not-allowed disabled:opacity-60 ${
                     selected
                       ? "border-green-300/80 bg-gradient-to-br from-green-300/20 to-green-400/5 shadow-[0_0_20px_rgba(97,211,148,0.15)]"
-                      : "border-white/10 bg-white/[0.06] hover:border-orange-300/70 hover:bg-white/[0.1]"
+                      : isCancelled
+                        ? "border-red-300/70 bg-red-950/50 text-zinc-300 opacity-60 saturate-50"
+                        : "border-white/10 bg-white/[0.06] hover:border-orange-300/70 hover:bg-white/[0.1]"
                   }`}
                   style={{ minHeight: duration(act), animationDelay: `${Math.min(stageIndex * 60 + actIndex * 40, 600)}ms` }}
                 >
                   <span className="flex w-full items-center justify-between gap-2 text-xs font-bold uppercase text-zinc-400">
                     <span className="inline-flex items-center gap-1"><Clock3 size={14} />TBA</span>
-                    {selected && <Check size={18} className="animate-scale-in text-green-300" />}
+                    {isCancelled && <CancelledBadge />}
+                    {selected && !isCancelled && <Check size={18} className="animate-scale-in text-green-300" />}
                   </span>
-                  <span className="text-xl font-black leading-tight">{act.artist}</span>
+                  <span className={isCancelled ? "text-xl font-black leading-tight line-through decoration-red-300/80 decoration-2" : "text-xl font-black leading-tight"}>{act.artist}</span>
+                  {isCancelled && <span className="text-xs font-bold text-red-100/90">{act.note}</span>}
                   <span className="mt-auto flex flex-wrap items-center gap-2 text-xs text-zinc-300">
                     <Users size={14} className="shrink-0" />
                     <PersonTags people={people} />

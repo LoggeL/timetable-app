@@ -10,6 +10,8 @@ export type Act = {
   start?: string;
   end?: string;
   source: "official-timetable" | "official-lineup";
+  status?: "cancelled";
+  note?: string;
 };
 
 export type Festival = {
@@ -39,7 +41,7 @@ export const festivals: Festival[] = [
     name: "Southside",
     place: "Neuhausen ob Eck",
     dates: "18.-21. Juni 2026",
-    note: "Offizielle Zeiten aus southside.de, Stand 19.06.2026.",
+    note: "Freitag wegen Gewitter aktualisiert: A Day To Remember, Clueso, Filow und RØRY entfallen. Stand 19.06.2026.",
     sourceUrl: "https://southside.de/line-up/",
     stageOrder: ["Green Stage", "Blue Stage", "Red Stage", "White Stage", "Electric Wave X White Stage", "TBA"],
   },
@@ -268,19 +270,34 @@ const southsideTimes: Record<string, { stage: string; start: string; end: string
   [southsideTimeKey("21.06.2026", "DAVID PUENTEZ")]: { stage: "White Stage", start: "22:45", end: "00:00" },
 };
 
+const southsideCancelled = new Set([
+  southsideTimeKey("19.06.2026", "A DAY TO REMEMBER"),
+  southsideTimeKey("19.06.2026", "CLUESO"),
+  southsideTimeKey("19.06.2026", "FILOW"),
+  southsideTimeKey("19.06.2026", "RØRY"),
+]);
+
 const southside: Act[] = Object.entries(southsideByDay).flatMap(([key, artists]) => {
   const [day, date] = key.split("|");
-  return artists.map((artist, index) => ({
-    id: `southside-${date}-${index}`,
-    festivalId: "southside-2026",
-    day,
-    date,
-    stage: southsideTimes[southsideTimeKey(date, artist)]?.stage ?? (artist.includes("NOIZE") || artist.includes("MODESELEKTOR") || artist.includes("PUENTEZ") || artist.includes("TINLICKER") || artist.includes("MODESTEP") || artist === "ROYA" ? "Electric Wave X White Stage" : "TBA"),
-    artist,
-    start: southsideTimes[southsideTimeKey(date, artist)]?.start,
-    end: southsideTimes[southsideTimeKey(date, artist)]?.end,
-    source: southsideTimes[southsideTimeKey(date, artist)] ? "official-timetable" : "official-lineup",
-  }));
+  return artists.map((artist, index) => {
+    const timeKey = southsideTimeKey(date, artist);
+    const time = southsideTimes[timeKey];
+    const cancelled = southsideCancelled.has(timeKey);
+
+    return {
+      id: `southside-${date}-${index}`,
+      festivalId: "southside-2026",
+      day,
+      date,
+      stage: time?.stage ?? (artist.includes("NOIZE") || artist.includes("MODESELEKTOR") || artist.includes("PUENTEZ") || artist.includes("TINLICKER") || artist.includes("MODESTEP") || artist === "ROYA" ? "Electric Wave X White Stage" : "TBA"),
+      artist,
+      start: time?.start,
+      end: time?.end,
+      source: time ? "official-timetable" : "official-lineup",
+      status: cancelled ? "cancelled" : undefined,
+      note: cancelled ? "Entfällt wegen Gewitter-Unterbrechung am Freitag." : undefined,
+    };
+  });
 });
 
 const stagetopiaRows: [string, string, string, string][] = [

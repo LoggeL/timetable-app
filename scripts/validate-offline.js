@@ -38,10 +38,10 @@ async function gotoAndStop(page, targetUrl, timeout = 15000) {
         const start = Date.now();
         while (Date.now() - start < 25000) {
           const keys = await caches.keys();
-          if (keys.some((key) => key.startsWith('timetable-offline-v2026-06-19-5'))) return resolve();
+          if (keys.some((key) => key.startsWith('timetable-offline-v2026-06-19-6'))) return resolve();
           await new Promise((r) => setTimeout(r, 250));
         }
-        reject(new Error('expected v5 cache missing'));
+        reject(new Error('expected v6 cache missing'));
       }).catch(reject);
     }));
 
