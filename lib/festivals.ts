@@ -39,7 +39,7 @@ export const festivals: Festival[] = [
     name: "Southside",
     place: "Neuhausen ob Eck",
     dates: "18.-21. Juni 2026",
-    note: "Offizielle Zeiten aus southside.de, Stand 17.06.2026.",
+    note: "Offizielle Zeiten aus southside.de, Stand 19.06.2026.",
     sourceUrl: "https://southside.de/line-up/",
     stageOrder: ["Green Stage", "Blue Stage", "Red Stage", "White Stage", "Electric Wave X White Stage", "TBA"],
   },
@@ -171,8 +171,8 @@ const rar: Act[] = rarRows.map(([dayKey, day, date, stage, artist, start, end], 
 
 const southsideByDay: Record<string, string[]> = {
   "Donnerstag|18.06.2026": ["MOOP MAMA", "MAJAN", "MOLA", "HI! SPENCER", "BRASSPALAST"],
-  "Freitag|19.06.2026": ["BILLY TALENT", "HALSEY", "PROVINZ", "EMPIRE OF THE SUN", "A DAY TO REMEMBER", "CLUESO", "BHZ", "THE BUTCHER SISTERS", "LEVIN LIAM", "LEONY", "FILOW", "RITTER LEAN", "SKINDRED", "SPRINTS", "PA69", "RØRY", "TORS", "VICKY", "DAVINA MICHELLE", "DELILAH BON", "UNPEOPLE", "JUST MUSTARD", "BLACKGOLD", "MODESELEKTOR", "BOYS NOIZE"],
-  "Samstag|20.06.2026": ["KRAFTKLUB", "YUNGBLUD", "THE OFFSPRING", "ROY BIANCO & DIE ABBRUNZATI BOYS", "DONOTS", "BOSSE", "SONDASCHULE", "ROYEL OTIS", "DRUNKEN MASTERS", "PENNYWISE", "THE BEACHES", "GRANDSON", "ZEBRAHEAD", "PRESIDENT", "BETTEROV", "BASEMENT", "ESTHER GRAF", "KAYLA SHYX", "RIKAS", "ROSMARIN", "THE ATARIS", "ECCA VANDAL", "ANDA MORTS", "MILITARIE GUN", "PAULA ENGELS", "RAYNOR", "LEILA LAMB", "TUSKER", "MODESTEP (LIVE)", "ROYA", "LISKA"],
+  "Freitag|19.06.2026": ["BILLY TALENT", "HALSEY", "PROVINZ", "EMPIRE OF THE SUN", "A DAY TO REMEMBER", "CLUESO", "BHZ", "THE BUTCHER SISTERS", "LEVIN LIAM", "LEONY", "FILOW", "RITTER LEAN", "SKINDRED", "SPRINTS", "PA69", "RØRY", "TORS", "VICKY", "DAVINA MICHELLE", "DELILAH BON", "UNPEOPLE", "JUST MUSTARD", "BLACKGOLD", "MODESELEKTOR", "BOYS NOIZE", "KING KONG KICKS"],
+  "Samstag|20.06.2026": ["KRAFTKLUB", "YUNGBLUD", "THE OFFSPRING", "ROY BIANCO & DIE ABBRUNZATI BOYS", "DONOTS", "BOSSE", "SONDASCHULE", "ROYEL OTIS", "DRUNKEN MASTERS", "PENNYWISE", "THE BEACHES", "GRANDSON", "ZEBRAHEAD", "PRESIDENT", "BETTEROV", "BASEMENT", "ESTHER GRAF", "KAYLA SHYX", "RIKAS", "ROSMARIN", "THE ATARIS", "ECCA VANDAL", "ANDA MORTS", "MILITARIE GUN", "PAULA ENGELS", "RAYNOR", "LEILA LAMB", "TUSKER", "MODESTEP (LIVE)", "DENNIS CONCORDE", "ROYA", "LISKA"],
   "Sonntag|21.06.2026": ["TWENTY ONE PILOTS", "FLORENCE + THE MACHINE", "PAPA ROACH", "FINCH", "NOTHING BUT THIEVES", "WOLF ALICE", "SSIO", "ALEXISONFIRE", "ALL TIME LOW", "KAFFKIEZ", "NATASHA BEDINGFIELD", "EDWIN ROSEN", "OG KEEMO", "ORVILLE PECK", "KASI", "DESTROY BOYS", "KINGFISHR", "DREI METER FELDWEG", "SCENE QUEEN", "FLORENCE ROAD", "THE SOPHS", "YONAKA", "PICTURE PARLOUR", "DAVID PUENTEZ", "TINLICKER", "ZIMT & ZORN"],
 };
 
@@ -207,6 +207,7 @@ const southsideTimes: Record<string, { stage: string; start: string; end: string
   [southsideTimeKey("19.06.2026", "LEONY")]: { stage: "White Stage", start: "21:45", end: "22:45" },
   [southsideTimeKey("19.06.2026", "BOYS NOIZE")]: { stage: "White Stage", start: "23:15", end: "00:30" },
   [southsideTimeKey("19.06.2026", "MODESELEKTOR")]: { stage: "White Stage", start: "00:45", end: "02:00" },
+  [southsideTimeKey("19.06.2026", "KING KONG KICKS")]: { stage: "White Stage", start: "02:00", end: "05:00" },
   [southsideTimeKey("20.06.2026", "ECCA VANDAL")]: { stage: "Green Stage", start: "13:00", end: "13:30" },
   [southsideTimeKey("20.06.2026", "ZEBRAHEAD")]: { stage: "Green Stage", start: "14:00", end: "14:45" },
   [southsideTimeKey("20.06.2026", "GRANDSON")]: { stage: "Green Stage", start: "15:15", end: "16:00" },
@@ -238,6 +239,7 @@ const southsideTimes: Record<string, { stage: string; start: string; end: string
   [southsideTimeKey("20.06.2026", "BETTEROV")]: { stage: "White Stage", start: "21:45", end: "22:45" },
   [southsideTimeKey("20.06.2026", "ROYA")]: { stage: "White Stage", start: "23:15", end: "00:30" },
   [southsideTimeKey("20.06.2026", "MODESTEP (LIVE)")]: { stage: "White Stage", start: "00:45", end: "02:00" },
+  [southsideTimeKey("20.06.2026", "DENNIS CONCORDE")]: { stage: "White Stage", start: "02:00", end: "05:00" },
   [southsideTimeKey("21.06.2026", "SCENE QUEEN")]: { stage: "Green Stage", start: "12:00", end: "12:45" },
   [southsideTimeKey("21.06.2026", "DESTROY BOYS")]: { stage: "Green Stage", start: "13:15", end: "14:00" },
   [southsideTimeKey("21.06.2026", "ALL TIME LOW")]: { stage: "Green Stage", start: "14:45", end: "15:45" },
