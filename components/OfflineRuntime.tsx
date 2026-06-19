@@ -3,14 +3,16 @@
 import { useEffect } from "react";
 
 const SW_URL = "/sw.js";
-const PRECACHE_NAME = "timetable-offline-v2026-06-18-1-client";
+const PRECACHE_NAME = "timetable-offline-v2026-06-19-1-client";
 const OFFLINE_EVENT_NAME = "timetable:offline-cache-ready";
 const OFFLINE_CORE_URLS = [
   "/",
   "/api/votes",
   "/manifest.webmanifest",
-  "/icon.png",
-  "/apple-icon.png",
+  "/icon-192.png",
+  "/icon-512.png",
+  "/maskable-icon-512.png",
+  "/apple-touch-icon.png",
   "/og-image.png",
   "/images/rock-am-ring-bg.png",
   "/images/stagetopia-bg.png",

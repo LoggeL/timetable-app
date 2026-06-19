@@ -1,4 +1,4 @@
-const CACHE_VERSION = "timetable-offline-v2026-06-18-1";
+const CACHE_VERSION = "timetable-offline-v2026-06-19-1";
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`;
 const IMAGE_CACHE = `${CACHE_VERSION}-images`;
@@ -12,8 +12,10 @@ const APP_SHELL = [
   "/",
   "/api/votes",
   "/manifest.webmanifest",
-  "/icon.png",
-  "/apple-icon.png",
+  "/icon-192.png",
+  "/icon-512.png",
+  "/maskable-icon-512.png",
+  "/apple-touch-icon.png",
   "/og-image.png",
   "/images/rock-am-ring-bg.png",
   "/images/stagetopia-bg.png",

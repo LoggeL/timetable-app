@@ -13,8 +13,18 @@ export const metadata: Metadata = {
     title: "Timetable",
   },
   icons: {
-    icon: "/icon.png",
-    apple: "/apple-icon.png",
+    icon: [
+      { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icon-512.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: "/apple-touch-icon.png",
+  },
+  other: {
+    "mobile-web-app-capable": "yes",
+    "apple-mobile-web-app-capable": "yes",
+    "apple-mobile-web-app-title": "Timetable",
+    "application-name": "Timetable",
+    "msapplication-TileColor": "#f97316",
   },
   openGraph: {
     title: "Timetable",
