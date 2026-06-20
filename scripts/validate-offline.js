@@ -38,10 +38,10 @@ async function gotoAndStop(page, targetUrl, timeout = 15000) {
         const start = Date.now();
         while (Date.now() - start < 25000) {
           const keys = await caches.keys();
-          if (keys.some((key) => key.startsWith('timetable-offline-v2026-06-19-6'))) return resolve();
+          if (keys.some((key) => key.startsWith('timetable-offline-v2026-06-20-1'))) return resolve();
           await new Promise((r) => setTimeout(r, 250));
         }
-        reject(new Error('expected v6 cache missing'));
+        reject(new Error('expected 2026-06-20-1 cache missing'));
       }).catch(reject);
     }));
 
@@ -68,10 +68,25 @@ async function gotoAndStop(page, targetUrl, timeout = 15000) {
       kingKong: document.body.innerText.includes('KING KONG KICKS'),
       dennis: document.body.innerText.includes('DENNIS CONCORDE'),
     }));
-    await page.evaluate(() => Array.from(document.querySelectorAll('button')).find((el) => el.textContent?.includes('Samstag'))?.click());
+    const dayChecks = [];
+    for (const label of ['Donnerstag', 'Freitag', 'Samstag', 'Sonntag']) {
+      await page.evaluate((label) => {
+        const button = Array.from(document.querySelectorAll('button')).find((element) => element.textContent?.includes(label) && /\d{2}\.\d{2}/.test(element.textContent || ''));
+        button?.click();
+      }, label);
+      await page.waitForFunction((label) => document.querySelector('h2')?.textContent?.includes(label), { timeout: 10000 }, label);
+      dayChecks.push(await page.evaluate((label) => ({
+        label,
+        heading: document.querySelector('h2')?.textContent || '',
+        appError: document.body.innerText.includes('Application error'),
+        hasActs: document.body.innerText.includes('Stage') || document.body.innerText.includes('TBA'),
+      }), label));
+    }
+
+    await page.evaluate(() => Array.from(document.querySelectorAll('button')).find((el) => el.textContent?.includes('Samstag') && /20\.06/.test(el.textContent || ''))?.click());
     await waitForText(page, 'DENNIS CONCORDE');
 
-    const offlineState = await page.evaluate(async (offlineFriday) => ({
+    const offlineState = await page.evaluate(async (offlineFriday, dayChecks) => ({
       title: document.body.innerText.includes('Festival-Abstimmung'),
       southside: document.body.innerText.includes('Southside'),
       kingKong: offlineFriday.kingKong,
@@ -81,7 +96,8 @@ async function gotoAndStop(page, targetUrl, timeout = 15000) {
       cacheKeys: await caches.keys(),
       bodyStart: document.body.innerText.slice(0, 300),
       friday: offlineFriday,
-    }), offlineFriday);
+      dayChecks,
+    }), offlineFriday, dayChecks);
 
     await page.type('input[placeholder="z.B. Logge"]', 'Puppeteer');
     await page.click('.act-card');
@@ -90,7 +106,7 @@ async function gotoAndStop(page, targetUrl, timeout = 15000) {
     const result = { onlineState, offlineState, voteQueued, errors };
     console.log(JSON.stringify(result, null, 2));
 
-    if (!onlineState.title || !onlineState.controller || !offlineState.title || !offlineState.kingKong || !offlineState.dennis || !offlineState.controller || errors.length) {
+    if (!onlineState.title || !onlineState.controller || !offlineState.title || !offlineState.kingKong || !offlineState.dennis || !offlineState.controller || offlineState.dayChecks?.some((check) => check.appError || !check.hasActs) || errors.length) {
       process.exit(1);
     }
   } finally {

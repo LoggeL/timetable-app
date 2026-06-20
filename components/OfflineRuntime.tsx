@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 
 const SW_URL = "/sw.js";
-const PRECACHE_NAME = "timetable-offline-v2026-06-19-6-client";
+const PRECACHE_NAME = "timetable-offline-v2026-06-20-1-client";
 const OFFLINE_EVENT_NAME = "timetable:offline-cache-ready";
 const OFFLINE_CORE_URLS = [
   "/",
