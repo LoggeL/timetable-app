@@ -44,6 +44,7 @@ export const festivals: Festival[] = [
     note: "Freitag wegen Gewitter aktualisiert: A Day To Remember, Clueso, Filow und RØRY entfallen. Stand 19.06.2026.",
     sourceUrl: "https://southside.de/line-up/",
     stageOrder: ["Green Stage", "Blue Stage", "Red Stage", "White Stage", "Electric Wave X White Stage", "TBA"],
+    archived: true,
   },
   {
     id: "stagetopia-2026",
