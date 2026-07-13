@@ -1,4 +1,4 @@
-const CACHE_VERSION = "timetable-offline-v2026-06-20-1";
+const CACHE_VERSION = "timetable-offline-v2026-07-13-1";
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`;
 const IMAGE_CACHE = `${CACHE_VERSION}-images`;

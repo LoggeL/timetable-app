@@ -61,9 +61,9 @@ export const festivals: Festival[] = [
     name: "Highfield",
     place: "Störmthaler See, Großpösna",
     dates: "13.-16. August 2026",
-    note: "Offizielles Line-up nach Tagen; Uhrzeiten waren am 07.06.2026 noch nicht veröffentlicht.",
+    note: "Offizielle Zeiten von highfield.de, Stand 13.07.2026.",
     sourceUrl: "https://highfield.de/line-up/",
-    stageOrder: ["Warm-Up Party", "Konzert", "Electric Beach"],
+    stageOrder: ["Main Stage", "Club Stage", "Electric Beach", "fritz-kola Stage"],
   },
 ];
 
@@ -341,57 +341,67 @@ const stagetopia: Act[] = stagetopiaRows.map(([stage, artist, start, end]) => ({
   source: "official-timetable",
 }));
 
-const highfieldByDay: Record<string, { warmup?: string[]; concert: string[]; electric?: string[] }> = {
-  "Donnerstag|13.08.2026": {
-    warmup: ["DRUNKEN MASTERS", "BIERBABES", "DENNIS CONCORDE"],
-    concert: [],
-    electric: ["THE IRONIX", "MIAMI LENZ", "RUTGER LIVE"],
-  },
-  "Freitag|14.08.2026": {
-    concert: ["SDP", "BHZ", "GIANT ROOKS", "SONDASCHULE", "LEVIN LIAM", "PA69", "ITCHY", "ADAM ANGST", "HI! SPENCER", "DENNIS CONCORDE"],
-    electric: ["JOSI MILLER", "CRUX PISTOLS"],
-  },
-  "Samstag|15.08.2026": {
-    concert: ["KRAFTKLUB", "01099", "DROPKICK MURPHYS", "ZARTMANN", "QUERBEAT", "DAS LUMPENPACK", "RITTER LEAN", "RAUM27", "ZSK", "VICKY", "YUNG PEPP", "DENNIS CONCORDE"],
-    electric: ["DJ SPORTSCHUH", "CLARA B2B FLAVIUS"],
-  },
-  "Sonntag|16.08.2026": {
-    concert: ["BEATSTEAKS", "MARTERIA", "FEINE SAHNE FISCHFILET", "$OHO BANI", "DILLA", "DEINE COUSINE", "NURA", "MONTREAL", "KAFVKA", "ANAÏS"],
-  },
-};
+const highfieldRows: [string, string, string, string, string, string][] = [
+  ["Donnerstag", "13.08.2026", "Main Stage", "BIERBABES", "20:00", "20:45"],
+  ["Donnerstag", "13.08.2026", "Main Stage", "DRUNKEN MASTERS", "21:00", "23:00"],
+  ["Donnerstag", "13.08.2026", "Electric Beach", "RUTGER LIVE", "23:00", "23:30"],
+  ["Donnerstag", "13.08.2026", "Electric Beach", "THE IRONIX", "23:30", "01:30"],
+  ["Donnerstag", "13.08.2026", "fritz-kola Stage", "DENNIS CONCORDE", "00:00", "03:00"],
+  ["Donnerstag", "13.08.2026", "Electric Beach", "MIAMI LENZ", "01:30", "03:00"],
+  ["Freitag", "14.08.2026", "Club Stage", "ITCHY", "15:00", "16:00"],
+  ["Freitag", "14.08.2026", "Club Stage", "HI! SPENCER", "16:00", "17:00"],
+  ["Freitag", "14.08.2026", "Main Stage", "SONDASCHULE", "17:00", "18:00"],
+  ["Freitag", "14.08.2026", "Club Stage", "ADAM ANGST", "18:00", "19:00"],
+  ["Freitag", "14.08.2026", "Main Stage", "GIANT ROOKS", "19:00", "20:00"],
+  ["Freitag", "14.08.2026", "Club Stage", "PA69", "20:00", "21:15"],
+  ["Freitag", "14.08.2026", "Main Stage", "BHZ", "21:15", "22:30"],
+  ["Freitag", "14.08.2026", "Electric Beach", "SCHWESTA P", "22:00", "00:00"],
+  ["Freitag", "14.08.2026", "Club Stage", "LEVIN LIAM", "22:30", "23:45"],
+  ["Freitag", "14.08.2026", "Main Stage", "SDP", "23:45", "01:15"],
+  ["Freitag", "14.08.2026", "Electric Beach", "JOSI MILLER", "00:00", "02:00"],
+  ["Freitag", "14.08.2026", "fritz-kola Stage", "DENNIS CONCORDE", "00:00", "03:00"],
+  ["Freitag", "14.08.2026", "Electric Beach", "CRUX PISTOLS", "02:00", "04:00"],
+  ["Samstag", "15.08.2026", "Main Stage", "ZSK", "13:30", "14:15"],
+  ["Samstag", "15.08.2026", "Club Stage", "YUNG PEPP", "14:15", "15:00"],
+  ["Samstag", "15.08.2026", "Main Stage", "QUERBEAT", "15:00", "16:00"],
+  ["Samstag", "15.08.2026", "Club Stage", "VICKY", "16:00", "17:00"],
+  ["Samstag", "15.08.2026", "Main Stage", "ZARTMANN", "17:00", "18:00"],
+  ["Samstag", "15.08.2026", "Club Stage", "RAUM27", "18:00", "19:00"],
+  ["Samstag", "15.08.2026", "Electric Beach", "MIAMI LENZ", "18:00", "19:00"],
+  ["Samstag", "15.08.2026", "Main Stage", "DROPKICK MURPHYS", "19:00", "20:00"],
+  ["Samstag", "15.08.2026", "Electric Beach", "AUSTIN", "19:00", "22:00"],
+  ["Samstag", "15.08.2026", "Club Stage", "RITTER LEAN", "20:00", "21:15"],
+  ["Samstag", "15.08.2026", "Main Stage", "01099", "21:15", "22:45"],
+  ["Samstag", "15.08.2026", "Electric Beach", "CLARA B2B FLAVIUS", "22:00", "00:30"],
+  ["Samstag", "15.08.2026", "Club Stage", "DAS LUMPENPACK", "22:45", "00:00"],
+  ["Samstag", "15.08.2026", "Main Stage", "KRAFTKLUB", "00:00", "01:30"],
+  ["Samstag", "15.08.2026", "fritz-kola Stage", "DENNIS CONCORDE", "00:00", "03:00"],
+  ["Samstag", "15.08.2026", "Electric Beach", "DJ SPORTSCHUH", "00:30", "02:00"],
+  ["Sonntag", "16.08.2026", "Club Stage", "ANAÏS", "13:30", "14:15"],
+  ["Sonntag", "16.08.2026", "Main Stage", "MONTREAL", "14:15", "15:00"],
+  ["Sonntag", "16.08.2026", "Club Stage", "KAFVKA", "15:00", "15:45"],
+  ["Sonntag", "16.08.2026", "Main Stage", "$OHO BANI", "15:45", "16:45"],
+  ["Sonntag", "16.08.2026", "Club Stage", "NURA", "16:45", "17:45"],
+  ["Sonntag", "16.08.2026", "Main Stage", "FEINE SAHNE FISCHFILET", "17:45", "18:45"],
+  ["Sonntag", "16.08.2026", "Electric Beach", "MIAMI LENZ", "18:00", "19:00"],
+  ["Sonntag", "16.08.2026", "Club Stage", "DEINE COUSINE", "18:45", "19:45"],
+  ["Sonntag", "16.08.2026", "Main Stage", "MARTERIA", "19:45", "21:15"],
+  ["Sonntag", "16.08.2026", "Electric Beach", "AUSTIN", "20:00", "22:00"],
+  ["Sonntag", "16.08.2026", "Club Stage", "DILLA", "21:15", "22:30"],
+  ["Sonntag", "16.08.2026", "Main Stage", "BEATSTEAKS", "22:30", "00:00"],
+];
 
-const highfield: Act[] = Object.entries(highfieldByDay).flatMap(([key, groups]) => {
-  const [day, date] = key.split("|");
-  return [
-    ...(groups.warmup ?? []).map((artist, index) => ({
-      id: `highfield-${date}-warmup-${index}`,
-      festivalId: "highfield-2026" as const,
-      day,
-      date,
-      stage: "Warm-Up Party",
-      artist,
-      source: "official-lineup" as const,
-    })),
-    ...groups.concert.map((artist, index) => ({
-      id: `highfield-${date}-concert-${index}`,
-      festivalId: "highfield-2026" as const,
-      day,
-      date,
-      stage: "Concert",
-      artist,
-      source: "official-lineup" as const,
-    })),
-    ...(groups.electric ?? []).map((artist, index) => ({
-      id: `highfield-${date}-electric-${index}`,
-      festivalId: "highfield-2026" as const,
-      day,
-      date,
-      stage: "Electric Beach",
-      artist,
-      source: "official-lineup" as const,
-    })),
-  ];
-});
+const highfield: Act[] = highfieldRows.map(([day, date, stage, artist, start, end], index) => ({
+  id: `highfield-${date}-${index}`,
+  festivalId: "highfield-2026",
+  day,
+  date,
+  stage,
+  artist,
+  start,
+  end,
+  source: "official-timetable",
+}));
 
 export const acts: Act[] = [...rar, ...southside, ...stagetopia, ...highfield];
 

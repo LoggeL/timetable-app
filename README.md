@@ -30,7 +30,7 @@ Production is deployed by Dokploy from GitHub:
 - Rock am Ring 2026 uses official timetable data from `https://www.rock-am-ring.com/timetable`, checked on 2026-06-05.
 - Southside 2026 uses official timetable data from `https://southside.de/line-up/`, checked on 2026-06-17.
 - Stagetopia 2026 uses official timetable data from `https://stagetopia.de/`, checked on 2026-06-01.
-- Highfield 2026 uses official lineup-by-day data from `https://highfield.de/line-up/`, checked on 2026-05-28. Times are marked `TBA`.
+- Highfield 2026 uses official timetable data from `https://highfield.de/line-up/` and the linked official PDF `https://highfield.de/fileadmin/user_upload/Highfield/DOCS/HF26_Timetable_5.pdf`, checked on 2026-07-13.
 
 ## Assets
 
